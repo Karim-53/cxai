@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import "./styles.css";
 import initSqlJs from "sql.js"; // https://sql.js.org/#%2F=     test env https://sql.js.org/examples/GUI/index.html
 import pf from 'pareto-frontier';
-
+import DB from './test';
 // Required to let webpack 4 know it needs to copy the wasm file to our assets
 import sqlWasm from "!!file-loader?name=sql-wasm-[contenthash].wasm!sql.js/dist/sql-wasm.wasm";
 
 import Plot from 'react-plotly.js';
+// import DataTable from 'react-data-table-component'; todo [after acceptance]
 
 if (window.location.href.includes("localhost")) {
   console.log('localhost');
@@ -21,15 +22,15 @@ export default function App() {
     // see ../craco.config.js
     try {
       const sqlPromise = initSqlJs({ locateFile: () => sqlWasm });
-      const dataPromise = fetch("./test").then(res => res.arrayBuffer()).catch((error) => {
+      const dataPromise = fetch(DB).then(res => res.arrayBuffer()).catch((error) => {
         console.log('File not found:')
         console.log(error)
       });
       const [SQL, buf] = await Promise.all([sqlPromise, dataPromise])
-      console.log('ok.')
+      console.log('sql ok.')
       setDb(new SQL.Database(new Uint8Array(buf)));
     } catch (err) {
-      console.log('big error')
+      console.log('sql error:')
       setError(err);
     }
   }, []);
@@ -48,6 +49,36 @@ function to_dict(arr){
 }
 const arrayColumn = (arr, n) => arr.map(x => x[n]);
 
+function plotly_click(data){
+  
+  console.log('plotly_click:')
+  console.log(data)
+  console.log(data.points)
+
+
+  // var myPlot = document.getElementById('fig');
+
+  // myPlot.on('plotly_click', plotly_click(data))
+
+  explainer = data.points[0].text
+  // console.log(explainer)
+  // sql = 'Select * from Explainer Where name = ' + explainer
+  // result = db.exec(sql)
+
+}
+function sql_exec(sql) {
+  try {
+    // The sql is executed synchronously on the UI thread.
+    // You may want to use a web worker here instead
+    sql = "select * From summary";
+    setResults(db.exec(sql)); // an array of objects is returned
+    setError(null);
+  } catch (err) {
+    // exec throws an error when the SQL statement is invalid
+    setError(err);
+    setResults([]);
+  }
+}
 /**
  * A simple SQL read-eval-print-loop
  * @param {{db: import("sql.js").Database}} props
@@ -56,21 +87,9 @@ function SQLRepl({ db }) {
   const [error, setError] = useState(null);
   const [results, setResults] = useState([]);
 
-  function exec(sql) {
-    try {
-      // The sql is executed synchronously on the UI thread.
-      // You may want to use a web worker here instead
-      sql = "select * From summary";
-      setResults(db.exec(sql)); // an array of objects is returned
-      setError(null);
-    } catch (err) {
-      // exec throws an error when the SQL statement is invalid
-      setError(err);
-      setResults([]);
-    }
-  }
+
   var df;
-  console.log(results)
+  // console.log(results)
   if (results.length==0) {
     df = {
         "columns": [
@@ -185,7 +204,7 @@ function SQLRepl({ db }) {
         ]
     };
   } else {
-    console.log(results[0]);
+    // console.log(results[0]);
     df = results[0];
   }
   // var time_per_test = [1, 2, 3, 4, 5]
@@ -195,7 +214,6 @@ function SQLRepl({ db }) {
   // var pareto_time_per_test = [1.5, 2.5, 3.5, 4.5, 5.5]
   // var pareto_percentage = [4, 1, 7, 1, 4]
 
-  // console.log(results)
   // if (results.length> 0) {
   var column = to_dict(df.columns)
   var time_per_test = arrayColumn(df.values, column['time_per_test']);
@@ -205,11 +223,9 @@ function SQLRepl({ db }) {
 
 
   var merged = []
-  console.log(time_per_test.length)
   for (let i = 0; i < time_per_test.length; i++) {
     merged.push([percentage[i], time_per_test[i]]);
   }
-  console.log(merged);
   const pareto = pf.getParetoFrontier(merged, { optimize: 'bottomRight' });
 
   var pareto_time_per_test = arrayColumn(pareto, 1);
@@ -218,13 +234,13 @@ function SQLRepl({ db }) {
   // }
 
 
-  var trace1 = {
+  var trace1 = { // todo after acceptance Plotly.animate('graph', { https://plotly.com/javascript/plotlyjs-function-reference/#plotlyanimate
     x: time_per_test,
     y: percentage,
     mode: 'markers+text',
     type: 'scatter',
     name: 'Explainers',
-    text: text,
+    text: text, // hover https://plotly.com/javascript/reference/
     textposition: 'top center',
     textfont: {
       family:  'Raleway, sans-serif'
@@ -282,10 +298,16 @@ function SQLRepl({ db }) {
 
   return (
     <div className="App">
-      <h1>React SQL interpreter</h1>
+      <Plot
+        data={data}
+        layout={layout}
+        onClick={plotly_click}
+        divId={'fig'}
+      />
+      <h1>Filters</h1>
 
       <textarea
-        onChange={(e) => exec(e.target.value)}
+        onChange={(e) => sql_exec(e.target.value)}
         placeholder="Enter some SQL. No inspiration ? Try “select sqlite_version()”"
       ></textarea>
 
@@ -300,11 +322,7 @@ function SQLRepl({ db }) {
         }
       </pre>
       
-      <Plot
-        data={data}
-        layout={layout}
-        divId={'fig'}
-      />
+      <h1>Click on an explainer for more details</h1>
     </div>
   );
 }
