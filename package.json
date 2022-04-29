@@ -9,6 +9,7 @@
   "main": "src/index.js",
   "license": "MIT",
   "dependencies": {
+    "pareto-frontier": "^1.1.1",
     "plotly.js": "^2.11.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
