@@ -1,0 +1,21 @@
+{
+  "files": {
+    "main.css": "/react-sqljs-demo/build/static/css/main.0bd68b41.chunk.css",
+    "main.js": "/react-sqljs-demo/build/static/js/main.81382442.chunk.js",
+    "main.js.map": "/react-sqljs-demo/build/static/js/main.81382442.chunk.js.map",
+    "runtime-main.js": "/react-sqljs-demo/build/static/js/runtime-main.cafd85ed.js",
+    "runtime-main.js.map": "/react-sqljs-demo/build/static/js/runtime-main.cafd85ed.js.map",
+    "static/js/2.5629083b.chunk.js": "/react-sqljs-demo/build/static/js/2.5629083b.chunk.js",
+    "static/js/2.5629083b.chunk.js.map": "/react-sqljs-demo/build/static/js/2.5629083b.chunk.js.map",
+    "index.html": "/react-sqljs-demo/build/index.html",
+    "sql-wasm.wasm": "/react-sqljs-demo/build/sql-wasm-2b277767061e6a2529fe1f2e6fe80b4a.wasm",
+    "static/css/main.0bd68b41.chunk.css.map": "/react-sqljs-demo/build/static/css/main.0bd68b41.chunk.css.map",
+    "static/js/2.5629083b.chunk.js.LICENSE.txt": "/react-sqljs-demo/build/static/js/2.5629083b.chunk.js.LICENSE.txt"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.cafd85ed.js",
+    "static/js/2.5629083b.chunk.js",
+    "static/css/main.0bd68b41.chunk.css",
+    "static/js/main.81382442.chunk.js"
+  ]
+}
