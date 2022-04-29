@@ -271,8 +271,9 @@ function SQLRepl({ db }) {
         // color: 'grey',
       }
     },
+    
     title:"Global overview of the explainers' performance"
-  };
+  };  // todo [after acceptance] autosize: true, https://dev.to/dheerajmurali/building-a-responsive-chart-in-react-with-plotly-js-4on8
   
   // Plotly.newPlot('myDiv', data, layout);
 
