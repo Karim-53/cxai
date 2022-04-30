@@ -367,3 +367,20 @@ function ResultsTable({ columns, values }) {
 
   // SELECT *
   // FROM cross_tab
+
+  // explainer, category, AVG(score), COUNT(score)
+  // GROUP BY category
+
+
+  SELECT explainer, category, AVG(time), AVG(score)
+FROM cross_tab
+Left JOIN test ON cross_tab.test = test.test
+Where explainer = 'archipelago'
+GROUP BY category
+
+
+SELECT explainer, category, AVG(time), AVG(score)
+FROM cross_tab
+Left JOIN test ON cross_tab.test = test.test
+Where explainer = 'baseline_random'
+GROUP BY category
