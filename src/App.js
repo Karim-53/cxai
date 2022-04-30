@@ -1,13 +1,14 @@
+// some sql.js op https://phiresky.github.io/blog/2021/hosting-sqlite-databases-on-github-pages/
 import React, { useState, useEffect } from "react";
 import "./styles.css";
 import initSqlJs from "sql.js"; // https://sql.js.org/#%2F=     test env https://sql.js.org/examples/GUI/index.html
 import pf from 'pareto-frontier';
-import DB from './test';
+import DB from './database';
 // Required to let webpack 4 know it needs to copy the wasm file to our assets
 import sqlWasm from "!!file-loader?name=sql-wasm-[contenthash].wasm!sql.js/dist/sql-wasm.wasm";
 
 import Plot from 'react-plotly.js';
-// import DataTable from 'react-data-table-component'; todo [after acceptance]
+// import DataTable from 'react-data-table-component'; todo [after acceptance] https://datatables.net/
 
 if (window.location.href.includes("localhost")) {
   console.log('localhost');
@@ -60,7 +61,7 @@ function plotly_click(data){
 
   // myPlot.on('plotly_click', plotly_click(data))
 
-  explainer = data.points[0].text
+  let explainer = data.points[0].text
   // console.log(explainer)
   // sql = 'Select * from Explainer Where name = ' + explainer
   // result = db.exec(sql)
@@ -70,7 +71,9 @@ function sql_exec(sql) {
   try {
     // The sql is executed synchronously on the UI thread.
     // You may want to use a web worker here instead
-    sql = "select * From summary";
+    sql = `SELECT explainer, AVG(score)*100.0 AS percentage, AVG(time) AS time_per_test, count(score) AS eligible_points
+    FROM cross_tab
+    GROUP BY explainer;`;
     setResults(db.exec(sql)); // an array of objects is returned
     setError(null);
   } catch (err) {
@@ -357,3 +360,10 @@ function ResultsTable({ columns, values }) {
     </table>
   );
 }
+
+
+
+
+
+  // SELECT *
+  // FROM cross_tab
