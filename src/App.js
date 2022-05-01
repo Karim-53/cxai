@@ -60,7 +60,7 @@ function to_dict(arr){
   return dico
 }
 const arrayColumn = (arr, n) => arr.map(x => x[n]);
-const average_score = (arr, dico) => arr.map(x => average([x[dico['score_fidelity']],x[dico['score_stability']]]));
+const average_score = (arr, dico) => arr.map(x => average([x[dico['percentage_fidelity']],x[dico['percentage_stability']]]));
 
 function plotly_click(data){
 
@@ -87,8 +87,8 @@ function SQLRepl({ db }) {
   const sql = `SELECT	explainer,
                     AVG(time) AS time_per_test,
                     count(score) AS eligible_points,
-                    AVG(case category when 'fidelity' then score end)*100.0 AS score_fidelity,
-                    AVG(case category when 'stability' then score end)*100.0 AS score_stability
+                    AVG(case category when 'fidelity' then score end)*100.0 AS percentage_fidelity,
+                    AVG(case category when 'stability' then score end)*100.0 AS percentage_stability
             FROM cross_tab
             Left JOIN test ON cross_tab.test = test.test
             GROUP BY explainer;`;
@@ -112,12 +112,12 @@ function SQLRepl({ db }) {
   df = results[0];
   var column = to_dict(df.columns);
 
-  //const score_fidelity = arrayColumn(df.values, column['score_fidelity']);
+  //const percentagefidelity = arrayColumn(df.values, column['percentagefidelity']);
   const percentage = average_score(df.values, column)
   // const percentage = arrayColumn(df.values, column['percentage']);
   const time_per_test = arrayColumn(df.values, column['time_per_test']);
   const eligible_points = arrayColumn(df.values, column['eligible_points']);
-  const text = arrayColumn(df.values, column['index']);
+  const text = arrayColumn(df.values, column['explainer']);
   console.log(df)
 
   var merged = []
