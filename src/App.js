@@ -62,60 +62,31 @@ function to_dict(arr){
 const arrayColumn = (arr, n) => arr.map(x => x[n]);
 const average_score = (arr, dico) => arr.map(x => average([x[dico['percentage_fidelity']],x[dico['percentage_stability']]]));
 
-function plotly_click(data){
+const sql = `SELECT	explainer,
+AVG(time) AS time_per_test,
+count(score) AS eligible_points,
+AVG(case category when 'fidelity' then score end)*100.0 AS percentage_fidelity,
+AVG(case category when 'stability' then score end)*100.0 AS percentage_stability
+FROM cross_tab
+Left JOIN test ON cross_tab.test = test.test
+GROUP BY explainer;
 
-  console.log('plotly_click:')
-  console.log(data)
-  console.log(data.points)
+SELECT	category AS test_category, test.test, subtest, ROUND(score,2), ROUND(time),
+test.description AS test_description
+FROM cross_tab
+Left JOIN test ON cross_tab.test = test.test
+Where (explainer = 'kernel_shap') and (score IS NOT NULL)
+Order By test_category, test_subtest;
+`;
 
-
-  // var myPlot = document.getElementById('fig');
-
-  // myPlot.on('plotly_click', plotly_click(data))
-
-  let explainer = data.points[0].text
-
-  const sql = `SELECT	explainer,
-                    AVG(time) AS time_per_test,
-                    count(score) AS eligible_points,
-                    AVG(case category when 'fidelity' then score end)*100.0 AS percentage_fidelity,
-                    AVG(case category when 'stability' then score end)*100.0 AS percentage_stability
-            FROM cross_tab
-            Left JOIN test ON cross_tab.test = test.test
-            Where explainer = ` + explainer + `;
-            
-            `;
-  const [error, setError] = useState(null);
-  const [results, setResults] = useState(db.exec(sql));
-
-  // console.log(explainer)
-  // sql = 'Select * from Explainer Where name = ' + explainer
-  // result = db.exec(sql)
-
-}
 /**
  * A simple SQL read-eval-print-loop
  * @param {{db: import("sql.js").Database}} props
  */
 function SQLRepl({ db }) {
-  const sql = `SELECT	explainer,
-                    AVG(time) AS time_per_test,
-                    count(score) AS eligible_points,
-                    AVG(case category when 'fidelity' then score end)*100.0 AS percentage_fidelity,
-                    AVG(case category when 'stability' then score end)*100.0 AS percentage_stability
-              FROM cross_tab
-              Left JOIN test ON cross_tab.test = test.test
-              GROUP BY explainer;
-
-            SELECT	category AS test_category, test.test, subtest, ROUND(score,2), ROUND(time),
-                    test.description AS test_description
-            FROM cross_tab
-            Left JOIN test ON cross_tab.test = test.test
-            Where (explainer = 'kernel_shap') and (score IS NOT NULL)
-            Order By test_category, test_subtest;
-            `;
   const [error, setError] = useState(null);
   const [results, setResults] = useState(db.exec(sql));
+  const [selected_explainer, setExplainer] = useState('kernel_shap');
 
   function sql_exec(sql_bof) {
     try {
@@ -128,7 +99,21 @@ function SQLRepl({ db }) {
       setResults([]);
     }
   }
-
+  function plotly_click(data){
+    console.log('plotly_click:')
+    console.log(data)
+    console.log(data.points) 
+  
+    let explainer = data.points[0].text
+  
+    setExplainer(explainer)
+  
+    // console.log(explainer)
+    // sql = 'Select * from Explainer Where name = ' + explainer
+    // result = db.exec(sql)
+  
+  }
+  console.log('passed explainer', selected_explainer)
   console.log(results)
   var df;
   df = results[0];
@@ -226,7 +211,7 @@ function SQLRepl({ db }) {
       />
       <h1>Filters</h1> 
       {/* on hover help https://reactjs.org/docs/events.html */}
-      
+
       <h1 id='explainer_title' >Click on an explainer for more details</h1>
 
       <textarea
