@@ -62,7 +62,8 @@ function to_dict(arr){
 const arrayColumn = (arr, n) => arr.map(x => x[n]);
 const average_score = (arr, dico) => arr.map(x => average([x[dico['percentage_fidelity']],x[dico['percentage_stability']]]));
 
-const sql = `SELECT	explainer,
+function sql(explainer){
+  return `SELECT	explainer,
 AVG(time) AS time_per_test,
 count(score) AS eligible_points,
 AVG(case category when 'fidelity' then score end)*100.0 AS percentage_fidelity,
@@ -75,23 +76,23 @@ SELECT	category AS test_category, test.test, subtest, ROUND(score,2), ROUND(time
 test.description AS test_description
 FROM cross_tab
 Left JOIN test ON cross_tab.test = test.test
-Where (explainer = 'kernel_shap') and (score IS NOT NULL)
+Where (explainer = '`+explainer+`') and (score IS NOT NULL)
 Order By test_category, test_subtest;
 `;
-
+}
 /**
  * A simple SQL read-eval-print-loop
  * @param {{db: import("sql.js").Database}} props
  */
 function SQLRepl({ db }) {
   const [error, setError] = useState(null);
-  const [results, setResults] = useState(db.exec(sql));
   const [selected_explainer, setExplainer] = useState('kernel_shap');
+  const [results, setResults] = useState(db.exec(sql(selected_explainer)));
 
   function sql_exec(sql_bof) {
     try {
       // The sql is executed synchronously on the UI thread. You may want to use a web worker here instead
-      setResults(db.exec(sql)); // an array of objects is returned
+      setResults(db.exec(sql(selected_explainer))); // an array of objects is returned
       setError(null);
     } catch (err) {
       // exec throws an error when the SQL statement is invalid
@@ -107,11 +108,6 @@ function SQLRepl({ db }) {
     let explainer = data.points[0].text
   
     setExplainer(explainer)
-  
-    // console.log(explainer)
-    // sql = 'Select * from Explainer Where name = ' + explainer
-    // result = db.exec(sql)
-  
   }
   console.log('passed explainer', selected_explainer)
   console.log(results)
