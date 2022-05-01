@@ -74,6 +74,20 @@ function plotly_click(data){
   // myPlot.on('plotly_click', plotly_click(data))
 
   let explainer = data.points[0].text
+
+  const sql = `SELECT	explainer,
+                    AVG(time) AS time_per_test,
+                    count(score) AS eligible_points,
+                    AVG(case category when 'fidelity' then score end)*100.0 AS percentage_fidelity,
+                    AVG(case category when 'stability' then score end)*100.0 AS percentage_stability
+            FROM cross_tab
+            Left JOIN test ON cross_tab.test = test.test
+            Where explainer = ` + explainer + `;
+            
+            `;
+  const [error, setError] = useState(null);
+  const [results, setResults] = useState(db.exec(sql));
+
   // console.log(explainer)
   // sql = 'Select * from Explainer Where name = ' + explainer
   // result = db.exec(sql)
@@ -89,9 +103,17 @@ function SQLRepl({ db }) {
                     count(score) AS eligible_points,
                     AVG(case category when 'fidelity' then score end)*100.0 AS percentage_fidelity,
                     AVG(case category when 'stability' then score end)*100.0 AS percentage_stability
+              FROM cross_tab
+              Left JOIN test ON cross_tab.test = test.test
+              GROUP BY explainer;
+
+            SELECT	category AS test_category, test.test, subtest, ROUND(score,2), ROUND(time),
+                    test.description AS test_description
             FROM cross_tab
             Left JOIN test ON cross_tab.test = test.test
-            GROUP BY explainer;`;
+            Where (explainer = 'kernel_shap') and (score IS NOT NULL)
+            Order By test_category, test_subtest;
+            `;
   const [error, setError] = useState(null);
   const [results, setResults] = useState(db.exec(sql));
 
@@ -203,6 +225,7 @@ function SQLRepl({ db }) {
         divId={'fig'}
       />
       <h1>Filters</h1>
+      <h1 id='explainer_title' >Click on an explainer for more details</h1>
 
       <textarea
         onChange={(e) => sql_exec(e.target.value)}
@@ -220,7 +243,6 @@ function SQLRepl({ db }) {
         }
       </pre>
 
-      <h1>Click on an explainer for more details</h1>
     </div>
   );
 }
@@ -258,7 +280,7 @@ function ResultsTable({ columns, values }) {
 
 
 
-
+// category AS test_category, test_subtest, score, ROUND(time), test.description AS test_description
 
   // SELECT *
   // FROM cross_tab
