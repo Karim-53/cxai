@@ -224,7 +224,9 @@ function SQLRepl({ db }) {
         onClick={plotly_click}
         divId={'fig'}
       />
-      <h1>Filters</h1>
+      <h1>Filters</h1> 
+      {/* on hover help https://reactjs.org/docs/events.html */}
+      
       <h1 id='explainer_title' >Click on an explainer for more details</h1>
 
       <textarea
