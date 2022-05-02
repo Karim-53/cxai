@@ -6,7 +6,75 @@ import pf from 'pareto-frontier';
 import DB from './database';
 import sqlWasm from "!!file-loader?name=sql-wasm-[contenthash].wasm!sql.js/dist/sql-wasm.wasm"; // Required to let webpack 4 know it needs to copy the wasm file to our assets
 import Plot from 'react-plotly.js';
+import CheckboxTree from 'react-checkbox-tree';
+import "react-checkbox-tree/lib/react-checkbox-tree.css";
 // import DataTable from 'react-data-table-component'; todo [after acceptance] https://datatables.net/
+const nodes = [
+{
+  value: 'supported_models_checklist',
+  label: 'I need to explain specific AI model(s):',
+  children: [
+      { value: 'model_agnostic', label: 'model_agnostic' },
+      { value: 'tree_based', label: 'tree_based' },
+      { value: 'neural_network', label: 'neural_network' },
+  ],
+},
+{
+  value: 'required_output_checklist',
+  label: 'I need specific output(s) from the XAI:',
+  children: [
+      { value: 'importance', label: 'Feature importance (Global Explanation)' },
+      { value: 'attribution', label: 'Feature attribution (Local Explanation)' }, //  # We discuss the attribution problem, i.e., the problem of distributing the prediction score of a model for a specific input to its base features (cf. [15, 10, 19]); the attribution to a base feature can be interpreted as the importance of the feature to the prediction. https://arxiv.org/pdf/1908.08474.pdf
+      { value: 'interaction', label: 'Pair feature interaction (Global Explanation)' },
+      // # Definition 1 (Statistical Non-Additive Interaction). A function f contains a statistical non-additive interaction of multiple features indexed in set I if and only if f cannot be decomposed into a sum of |I| subfunctions fi , each excluding the i-th interaction variable: f(x) =/= Sum i∈I fi(x\{i}).
+      // #  Def. 1 identifies a non-additive effect among all features I on the output of function f (Friedman and Popescu, 2008; Sorokina et al., 2008; Tsang et al., 2018a). see https://arxiv.org/pdf/2103.03103.pdf
+      // # todo [after acceptance] we need a page with a clear description of each option
+      { value: 'todo1', label: 'Future work: Pair interaction (Local Ex), multi F interaction, NLP, debugging ...' }
+  ]
+},
+{
+  value: 'required_input_data_',
+  label: 'I can provide some information to the xAI algorithm:',
+  children: [
+      { value: 'required_input_data_reference_df', label: 'A reference input data' },
+      { value: 'required_input_data_truth', label: 'Target values of the data points to explain (truth, not prediction)' }, //  # We discuss the attribution problem, i.e., the problem of distributing the prediction score of a model for a specific input to its base features (cf. [15, 10, 19]); the attribution to a base feature can be interpreted as the importance of the feature to the prediction. https://arxiv.org/pdf/1908.08474.pdf
+  ]
+},
+{
+  value: 'explainer_input_xai_',
+  label: 'I can execute additional operation on the AI model:',
+  children: [
+      { value: 'explainer_input_xai_train_function', label: 'Retrain the model.' },
+      { value: 'explainer_input_xai_predict_function', label: 'Perform addional predictions.' }, //  # We discuss the attribution problem, i.e., the problem of distributing the prediction score of a model for a specific input to its base features (cf. [15, 10, 19]); the attribution to a base feature can be interpreted as the importance of the feature to the prediction. https://arxiv.org/pdf/1908.08474.pdf
+  ]
+},
+{
+  value: 'test_adversarial_attacks',
+  label: 'I trust the xAI output (I created the data and the model myself)'
+},
+{
+  value: 'assumptions_data_distribution_iid',
+  label: 'Assume input features to be independent and uniformly distributed'
+},
+{
+  value: 'explainer_need_gpu',
+  label: 'Constraint on hardware equipement: xAI alg. require a GPU.'
+}
+// {
+//   value: 'uid',
+//   label: 'visible'
+// },
+// {
+//   value: 'uid',
+//   label: 'visible'
+// },
+// {
+//   value: 'uid',
+//   label: 'visible'
+// }
+];
+
+
 function average(data) {
   /*Can't find an average function in JS, made one
   This function is able to handle null values!!!*/
@@ -21,9 +89,11 @@ function average(data) {
     if (count) {var average = Number( sum / count)} else { average=null}
     return average;
   }
-if (window.location.href.includes("localhost")) {
-  console.log('localhost');
-}
+if (window.location.href.includes("localhost")) { console.log('localhost');}
+
+const categories = ['fidelity', 'fragility', 'stability', 'simplicity', 'stress']  // todo get it from db
+const pecentage_per_category = categories.map(category => ' AVG(case category when '+category+' then score end)*100.0 AS percentage_'+category).join(',\n ');
+
 export default function App() {
   const [db, setDb] = useState(null);
   const [error, setError] = useState(null);
@@ -63,11 +133,11 @@ const arrayColumn = (arr, n) => arr.map(x => x[n]);
 const average_score = (arr, dico) => arr.map(x => average([x[dico['percentage_fidelity']],x[dico['percentage_stability']]]));
 
 function sql(explainer){
+
   return `SELECT	explainer,
 AVG(time) AS time_per_test,
 count(score) AS eligible_points,
-AVG(case category when 'fidelity' then score end)*100.0 AS percentage_fidelity,
-AVG(case category when 'stability' then score end)*100.0 AS percentage_stability
+` + pecentage_per_category + ` 
 FROM cross_tab
 Left JOIN test ON cross_tab.test = test.test
 GROUP BY explainer;
@@ -88,7 +158,10 @@ function SQLRepl({ db }) {
   const [error, setError] = useState(null);
   const [selected_explainer, setExplainer] = useState('kernel_shap');
   const [results, setResults] = useState(db.exec(sql(selected_explainer)));
-
+  const [checked, setChecked] = useState([]);
+  const [expanded, setExpanded] = useState([]);
+  
+  console.log('checked', checked)
   function sql_exec(sql_bof) {
     try {
       // The sql is executed synchronously on the UI thread. You may want to use a web worker here instead
@@ -206,6 +279,16 @@ function SQLRepl({ db }) {
         divId={'fig'}
       />
       <h1>Filters</h1> 
+      <pre>
+        <CheckboxTree
+            nodes={nodes}
+            checked={checked}
+            expanded={expanded}
+            onCheck={checked => {setChecked(checked)}}
+            onExpand={expanded => setExpanded(expanded)}
+            showExpandAll={true}
+        />
+      </pre>
       {/* on hover help https://reactjs.org/docs/events.html */}
 
       <h1 id='explainer_title' >Click on an explainer for more details</h1>
@@ -260,40 +343,3 @@ function ResultsTable({ columns, values }) {
     </table>
   );
 }
-
-
-
-// category AS test_category, test_subtest, score, ROUND(time), test.description AS test_description
-
-  // SELECT *
-  // FROM cross_tab
-
-  // explainer, category, AVG(score), COUNT(score)
-  // GROUP BY category
-
-
-//   SELECT explainer, category, AVG(time), AVG(score)
-// FROM cross_tab
-// Left JOIN test ON cross_tab.test = test.test
-// Where explainer = 'archipelago'
-// GROUP BY category
-
-
-// SELECT explainer, category, AVG(time), AVG(score)
-// FROM cross_tab
-// Left JOIN test ON cross_tab.test = test.test
-// Where explainer = 'baseline_random'
-// GROUP BY category
-
-
-// SELECT	explainer,
-// 		AVG(time) AS time_per_test,
-//  		count(score) AS eligible_points,
-// 		AVG(case category when 'fidelity' then score end) AS score_fidelity,
-// 		AVG(case category when 'stability' then score end) AS score_stability
-// FROM cross_tab
-// Left JOIN test ON cross_tab.test = test.test
-// GROUP BY explainer
-
-
-// (IFNULL(score_fidelity, 0.0)+IFNULL(score_stability, 0.0))/
