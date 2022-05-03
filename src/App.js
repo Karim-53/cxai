@@ -10,42 +10,42 @@ import CheckboxTree from 'react-checkbox-tree';
 import "react-checkbox-tree/lib/react-checkbox-tree.css";
 // import DataTable from 'react-data-table-component'; todo [after acceptance] https://datatables.net/
 const nodes = [
-{
+{ // todo include all of them in one big node "Filter:"
   value: 'supported_models_checklist',
   label: 'I need to explain specific AI model(s):',
   children: [
-      { value: 'model_agnostic', label: 'model_agnostic' },
-      { value: 'tree_based', label: 'tree_based' },
-      { value: 'neural_network', label: 'neural_network' },
+      { value: 'model_agnostic', label: 'Any (Model agnostic xAI alg.)' },
+      { value: 'tree_based', label: 'Tree-based' },
+      { value: 'neural_network', label: 'Neural Network' },
   ],
 },
 {
   value: 'required_output_checklist',
   label: 'I need specific output(s) from the XAI:',
   children: [
-      { value: 'importance', label: 'Feature importance (Global Explanation)' },
-      { value: 'attribution', label: 'Feature attribution (Local Explanation)' }, //  # We discuss the attribution problem, i.e., the problem of distributing the prediction score of a model for a specific input to its base features (cf. [15, 10, 19]); the attribution to a base feature can be interpreted as the importance of the feature to the prediction. https://arxiv.org/pdf/1908.08474.pdf
-      { value: 'interaction', label: 'Pair feature interaction (Global Explanation)' },
+      { value: 'output_importance', label: 'Feature importance (Global Explanation)'},
+      { value: 'output_attribution', label: 'Feature attribution (Local Explanation)' }, //  # We discuss the attribution problem, i.e., the problem of distributing the prediction score of a model for a specific input to its base features (cf. [15, 10, 19]); the attribution to a base feature can be interpreted as the importance of the feature to the prediction. https://arxiv.org/pdf/1908.08474.pdf
+      { value: 'output_interaction', label: 'Pair feature interaction (Global Explanation)' },
       // # Definition 1 (Statistical Non-Additive Interaction). A function f contains a statistical non-additive interaction of multiple features indexed in set I if and only if f cannot be decomposed into a sum of |I| subfunctions fi , each excluding the i-th interaction variable: f(x) =/= Sum i∈I fi(x\{i}).
       // #  Def. 1 identifies a non-additive effect among all features I on the output of function f (Friedman and Popescu, 2008; Sorokina et al., 2008; Tsang et al., 2018a). see https://arxiv.org/pdf/2103.03103.pdf
       // # todo [after acceptance] we need a page with a clear description of each option
-      { value: 'todo1', label: 'Future work: Pair interaction (Local Ex), multi F interaction, NLP, debugging ...' }
+      { value: 'todo1', label: '#Future work: Pair interaction (Local Ex), multi F interaction, NLP, debugging ...', disabled:true  }
   ]
 },
 {
   value: 'required_input_data_',
-  label: 'I can provide some information to the xAI algorithm:',
+  label: 'Select if we can not provide the following information to the xAI algorithm:',
   children: [
-      { value: 'required_input_data_reference_df', label: 'A reference input data' },
-      { value: 'required_input_data_truth', label: 'Target values of the data points to explain (truth, not prediction)' }, //  # We discuss the attribution problem, i.e., the problem of distributing the prediction score of a model for a specific input to its base features (cf. [15, 10, 19]); the attribution to a base feature can be interpreted as the importance of the feature to the prediction. https://arxiv.org/pdf/1908.08474.pdf
+      { value: 'required_input_X_reference', label: 'A reference input data' },
+      { value: 'required_input_truth_to_explain', label: 'Target values of the data points to explain (truth, not prediction)' },
   ]
 },
 {
   value: 'explainer_input_xai_',
-  label: 'I can execute additional operation on the AI model:',
+  label: 'Select if we can not execute the following operations on the AI model:',
   children: [
-      { value: 'explainer_input_xai_train_function', label: 'Retrain the model.' },
-      { value: 'explainer_input_xai_predict_function', label: 'Perform addional predictions.' }, //  # We discuss the attribution problem, i.e., the problem of distributing the prediction score of a model for a specific input to its base features (cf. [15, 10, 19]); the attribution to a base feature can be interpreted as the importance of the feature to the prediction. https://arxiv.org/pdf/1908.08474.pdf
+      { value: 'required_input_predict_func', label: 'Perform addional predictions.' },
+      { value: 'required_input_train_function', label: '#Future work: Retrain the model.', disabled:true },
   ]
 },
 {
@@ -54,24 +54,16 @@ const nodes = [
 },
 {
   value: 'assumptions_data_distribution_iid',
-  label: 'Assume input features to be independent and uniformly distributed'
+  label: '#Future work: Assume input features to be independent and uniformly distributed', disabled:true 
 },
 {
   value: 'explainer_need_gpu',
-  label: 'Constraint on hardware equipement: xAI alg. require a GPU.'
+  label: '#Future work: Constraint on hardware equipement: xAI alg. require a GPU.', disabled:true 
 }
 // {
 //   value: 'uid',
 //   label: 'visible'
 // },
-// {
-//   value: 'uid',
-//   label: 'visible'
-// },
-// {
-//   value: 'uid',
-//   label: 'visible'
-// }
 ];
 
 
@@ -92,7 +84,7 @@ function average(data) {
 if (window.location.href.includes("localhost")) { console.log('localhost');}
 
 const categories = ['fidelity', 'fragility', 'stability', 'simplicity', 'stress']  // todo get it from db
-const pecentage_per_category = categories.map(category => ' AVG(case category when '+category+' then score end)*100.0 AS percentage_'+category).join(',\n ');
+const pecentage_per_category = categories.map(category => ' ROUND(AVG(case category when \''+category+'\' then score end)*100.0,1) AS percentage_'+category).join(',\n ');
 
 export default function App() {
   const [db, setDb] = useState(null);
@@ -132,10 +124,10 @@ function to_dict(arr){
 const arrayColumn = (arr, n) => arr.map(x => x[n]);
 const average_score = (arr, dico) => arr.map(x => average([x[dico['percentage_fidelity']],x[dico['percentage_stability']]]));
 
-function sql(explainer){
+function sql(explainer, checked){
 
-  return `SELECT	explainer,
-AVG(time) AS time_per_test,
+  const r = `SELECT	explainer,
+ROUND(AVG(time),2) AS time_per_test,
 count(score) AS eligible_points,
 ` + pecentage_per_category + ` 
 FROM cross_tab
@@ -149,19 +141,22 @@ Left JOIN test ON cross_tab.test = test.test
 Where (explainer = '`+explainer+`') and (score IS NOT NULL)
 Order By test_category, test_subtest;
 `;
+console.log(r)
+return r
 }
 /**
  * A simple SQL read-eval-print-loop
  * @param {{db: import("sql.js").Database}} props
  */
 function SQLRepl({ db }) {
-  const [error, setError] = useState(null);
   const [selected_explainer, setExplainer] = useState('kernel_shap');
-  const [results, setResults] = useState(db.exec(sql(selected_explainer)));
-  const [checked, setChecked] = useState([]);
+  const [checked, setChecked] = useState(['output_importance']);
   const [expanded, setExpanded] = useState([]);
+  const [results, setResults] = useState(db.exec(sql(selected_explainer, checked)));
+  const [error, setError] = useState(null);
   
-  console.log('checked', checked)
+  console.log(sql(selected_explainer));
+  console.log('checked', checked);
   function sql_exec(sql_bof) {
     try {
       // The sql is executed synchronously on the UI thread. You may want to use a web worker here instead
@@ -289,6 +284,7 @@ function SQLRepl({ db }) {
             showExpandAll={true}
         />
       </pre>
+      {/* Kept XAI 11 / 11  Kept tests 18 / 18 */}
       {/* on hover help https://reactjs.org/docs/events.html */}
 
       <h1 id='explainer_title' >Click on an explainer for more details</h1>
