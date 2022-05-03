@@ -11,12 +11,12 @@ import "react-checkbox-tree/lib/react-checkbox-tree.css";
 // import DataTable from 'react-data-table-component'; todo [after acceptance] https://datatables.net/
 const nodes = [
 { // todo include all of them in one big node "Filter:"
-  value: 'supported_models_checklist',
+  value: 'supported_model_checklist',
   label: 'I need to explain specific AI model(s):',
   children: [
-      { value: 'model_agnostic', label: 'Any (Model agnostic xAI alg.)' },
-      { value: 'tree_based', label: 'Tree-based' },
-      { value: 'neural_network', label: 'Neural Network' },
+      { value: 'supported_model_model_agnostic', label: 'Any (Model agnostic xAI alg.)', sql:'explainer.supported_model_model_agnostic = 1' },
+      { value: 'supported_model_tree_based', label: 'Tree-based' },
+      { value: 'supported_model_neural_network', label: 'Neural Network' },
   ],
 },
 {
@@ -65,7 +65,13 @@ const nodes = [
 //   label: 'visible'
 // },
 ];
-
+var node_sql = {}
+function flatten_nodes(nodes, node_sql){
+  nodes.map( x => {if ('sql' in x) node_sql[x.value]= x.sql})
+  nodes.map( x => {if ('children' in x) flatten_nodes(x.children)})
+}
+flatten_nodes(nodes)
+console.log('node_sql', node_sql)
 
 function average(data) {
   /*Can't find an average function in JS, made one
@@ -155,7 +161,7 @@ function SQLRepl({ db }) {
   const [results, setResults] = useState(db.exec(sql(selected_explainer, checked)));
   const [error, setError] = useState(null);
   
-  console.log(sql(selected_explainer));
+  // console.log(sql(selected_explainer));
   console.log('checked', checked);
   function sql_exec(sql_bof) {
     try {
@@ -289,10 +295,10 @@ function SQLRepl({ db }) {
 
       <h1 id='explainer_title' >Click on an explainer for more details</h1>
 
-      <textarea
+      {/* <textarea
         onChange={(e) => sql_exec(e.target.value)}
         placeholder="Enter some SQL. No inspiration ? Try “select sqlite_version()”"
-      ></textarea>
+      ></textarea> */}
 
       <pre className="error">{(error || "").toString()}</pre>
 
