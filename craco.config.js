@@ -9,5 +9,10 @@ module.exports = {
                 }]
             }
         }
+        // todo https://github.com/gsoft-inc/craco/issues/104 change to docs/
+        // configure: (webpackConfig, { env, paths }) => { 
+        //     paths.appBuild = webpackConfig.output.path = path.resolve('custom-build-dir');
+        //     return webpackConfig;  // Important: return the modified config
+        // }
     }
 };

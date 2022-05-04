@@ -54,7 +54,7 @@ const nodes = [
 },
 {
   value: 'assumptions_data_distribution_iid',
-  label: '#Future work: Assume input features to be independent and uniformly distributed', disabled:true 
+  label: '#Future work: Assume input features to be independent and identically distributed', disabled:true 
 },
 {
   value: 'explainer_need_gpu',
@@ -66,11 +66,11 @@ const nodes = [
 // },
 ];
 var node_sql = {}
-function flatten_nodes(nodes, node_sql){
-  nodes.map( x => {if ('sql' in x) node_sql[x.value]= x.sql})
-  nodes.map( x => {if ('children' in x) flatten_nodes(x.children)})
-}
-flatten_nodes(nodes)
+// function flatten_nodes(nodes, node_sql){
+//   nodes.map( x => {if ('sql' in x) node_sql[x.value]= x.sql})
+//   nodes.map( x => {if ('children' in x) flatten_nodes(x.children)})
+// }
+// flatten_nodes(nodes) todo
 console.log('node_sql', node_sql)
 
 function average(data) {
