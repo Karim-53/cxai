@@ -6,26 +6,26 @@ import pf from 'pareto-frontier';
 import DB from './database';
 import sqlWasm from "!!file-loader?name=sql-wasm-[contenthash].wasm!sql.js/dist/sql-wasm.wasm"; // Required to let webpack 4 know it needs to copy the wasm file to our assets
 import Plot from 'react-plotly.js';
-import CheckboxTree from 'react-checkbox-tree';
-import "react-checkbox-tree/lib/react-checkbox-tree.css";
+import CheckboxTree from 'react-checkbox-tree';  // https://jakezatecky.github.io/react-checkbox-tree/
+import "react-checkbox-tree/lib/react-checkbox-tree.css";  // https://github.com/jakezatecky/react-checkbox-tree   
 // import DataTable from 'react-data-table-component'; todo [after acceptance] https://datatables.net/
 const nodes = [
 { // todo include all of them in one big node "Filter:"
   value: 'supported_model_checklist',
   label: 'I need to explain specific AI model(s):',
   children: [
-      { value: 'supported_model_model_agnostic', label: 'Any (Model agnostic xAI alg.)', sql:'explainer.supported_model_model_agnostic = 1' },
-      { value: 'supported_model_tree_based', label: 'Tree-based' },
-      { value: 'supported_model_neural_network', label: 'Neural Network' },
+      { value: 'supported_model_model_agnostic', label: 'Any (Model agnostic xAI alg.)', sql:'xai.supported_model_model_agnostic = 1' },
+      { value: 'supported_model_tree_based', label: 'Tree-based', sql:'xai.supported_model_tree_based = 1' },
+      { value: 'supported_model_neural_network', label: 'Neural Network', sql:'xai.supported_model_neural_network = 1'  },
   ],
 },
 {
   value: 'required_output_checklist',
   label: 'I need specific output(s) from the XAI:',
   children: [
-      { value: 'output_importance', label: 'Feature importance (Global Explanation)'},
-      { value: 'output_attribution', label: 'Feature attribution (Local Explanation)' }, //  # We discuss the attribution problem, i.e., the problem of distributing the prediction score of a model for a specific input to its base features (cf. [15, 10, 19]); the attribution to a base feature can be interpreted as the importance of the feature to the prediction. https://arxiv.org/pdf/1908.08474.pdf
-      { value: 'output_interaction', label: 'Pair feature interaction (Global Explanation)' },
+      { value: 'output_importance', label: 'Feature importance (Global Explanation)', sql:'xai.output_importance = 1'},
+      { value: 'output_attribution', label: 'Feature attribution (Local Explanation)', sql:'xai.output_attribution = 1' }, //  # We discuss the attribution problem, i.e., the problem of distributing the prediction score of a model for a specific input to its base features (cf. [15, 10, 19]); the attribution to a base feature can be interpreted as the importance of the feature to the prediction. https://arxiv.org/pdf/1908.08474.pdf
+      { value: 'output_interaction', label: 'Pair feature interaction (Global Explanation)', sql:'xai.output_interaction = 1' },
       // # Definition 1 (Statistical Non-Additive Interaction). A function f contains a statistical non-additive interaction of multiple features indexed in set I if and only if f cannot be decomposed into a sum of |I| subfunctions fi , each excluding the i-th interaction variable: f(x) =/= Sum i∈I fi(x\{i}).
       // #  Def. 1 identifies a non-additive effect among all features I on the output of function f (Friedman and Popescu, 2008; Sorokina et al., 2008; Tsang et al., 2018a). see https://arxiv.org/pdf/2103.03103.pdf
       // # todo [after acceptance] we need a page with a clear description of each option
@@ -34,23 +34,24 @@ const nodes = [
 },
 {
   value: 'required_input_data_',
-  label: 'Select if we can not provide the following information to the xAI algorithm:',
+  label: 'Check if we can NOT provide the following information to the xAI algorithm:',
   children: [
-      { value: 'required_input_X_reference', label: 'A reference input data' },
-      { value: 'required_input_truth_to_explain', label: 'Target values of the data points to explain (truth, not prediction)' },
+      { value: 'required_input_X_reference', label: 'A reference input data', sql:'xai.required_input_X_reference = 0' },
+      { value: 'required_input_truth_to_explain', label: 'Target values of the data points to explain (truth, not prediction)', sql:'xai.required_input_truth_to_explain = 0' },
   ]
 },
 {
   value: 'explainer_input_xai_',
-  label: 'Select if we can not execute the following operations on the AI model:',
+  label: 'Check if we can NOT execute the following operations on the AI model:',
   children: [
-      { value: 'required_input_predict_func', label: 'Perform addional predictions.' },
+      { value: 'required_input_predict_func', label: 'Perform addional predictions.', sql:'xai.required_input_predict_func = 0' },
       { value: 'required_input_train_function', label: '#Future work: Retrain the model.', disabled:true },
   ]
 },
 {
   value: 'test_adversarial_attacks',
-  label: 'I trust the xAI output (I created the data and the model myself)'
+  label: 'I trust the xAI output (I created the data and the model myself)',
+  sql: "t.category != 'fragility'"
 },
 {
   value: 'assumptions_data_distribution_iid',
@@ -65,12 +66,13 @@ const nodes = [
 //   label: 'visible'
 // },
 ];
+
 var node_sql = {}
-// function flatten_nodes(nodes, node_sql){
-//   nodes.map( x => {if ('sql' in x) node_sql[x.value]= x.sql})
-//   nodes.map( x => {if ('children' in x) flatten_nodes(x.children)})
-// }
-// flatten_nodes(nodes) todo
+function flatten_nodes(nodes, node_sql){
+  nodes.map( x => {if ('sql' in x) node_sql[x.value]= x.sql})
+  nodes.map( x => {if ('children' in x) flatten_nodes(x.children, node_sql)})
+}
+flatten_nodes(nodes, node_sql)
 console.log('node_sql', node_sql)
 
 function average(data) {
@@ -131,14 +133,17 @@ const arrayColumn = (arr, n) => arr.map(x => x[n]);
 const average_score = (arr, dico) => arr.map(x => average([x[dico['percentage_fidelity']],x[dico['percentage_stability']]]));
 
 function sql(explainer, checked){
-
-  const r = `SELECT	explainer,
-ROUND(AVG(time),2) AS time_per_test,
-count(score) AS eligible_points,
+  var where = checked.filter(checkbox_id => checkbox_id in node_sql).map( x => node_sql[x]).join(' AND ')
+  if (where.length > 0) where = 'Where ' + where + ' \n'
+  const r = `SELECT	c.explainer,
+ROUND(AVG(c.time),2) AS time_per_test,
+count(c.score) AS eligible_points,
 ` + pecentage_per_category + ` 
-FROM cross_tab
-Left JOIN test ON cross_tab.test = test.test
-GROUP BY explainer;
+FROM cross_tab AS c
+Left JOIN test AS t ON c.test = t.test
+Left JOIN explainer AS xai ON c.explainer = xai.explainer
+` + where + ` 
+GROUP BY c.explainer;
 
 SELECT	category AS test_category, test.test, subtest, ROUND(score,2), ROUND(time),
 test.description AS test_description
@@ -163,10 +168,10 @@ function SQLRepl({ db }) {
   
   // console.log(sql(selected_explainer));
   console.log('checked', checked);
-  function sql_exec(sql_bof) {
+  function sql_exec(new_sql) {
     try {
       // The sql is executed synchronously on the UI thread. You may want to use a web worker here instead
-      setResults(db.exec(sql(selected_explainer))); // an array of objects is returned
+      setResults(db.exec(new_sql)); // an array of objects is returned
       setError(null);
     } catch (err) {
       // exec throws an error when the SQL statement is invalid
@@ -185,6 +190,7 @@ function SQLRepl({ db }) {
   }
   console.log('passed explainer', selected_explainer)
   console.log(results)
+  console.log(error)
   var df;
   df = results[0];
   var column = to_dict(df.columns);
@@ -285,7 +291,7 @@ function SQLRepl({ db }) {
             nodes={nodes}
             checked={checked}
             expanded={expanded}
-            onCheck={checked => {setChecked(checked)}}
+            onCheck={checked => {sql_exec(sql(selected_explainer, checked));setChecked(checked); }}
             onExpand={expanded => setExpanded(expanded)}
             showExpandAll={true}
         />
