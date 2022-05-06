@@ -297,6 +297,8 @@ function SQLRepl({ db }) {
         data={data}
         layout={layout}
         onClick={plotly_click}
+        onHover={data => document.getElementsByClassName('nsewdrag')[0].style.cursor = 'pointer'}
+        onUnhover={data => document.getElementsByClassName('nsewdrag')[0].style.cursor = ''}
         divId={'fig'}
       />
       {/* <h1>Filters</h1>  */}
