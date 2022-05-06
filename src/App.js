@@ -11,8 +11,7 @@ import "react-checkbox-tree/lib/react-checkbox-tree.css";  // https://github.com
 // import DataTable from 'react-data-table-component'; todo [after acceptance] https://datatables.net/
 import jump from "./jump.js";
 const nodes = [
-  
-{ // todo include all of them in one big node "Filter:"
+{
   value: 'main_checklist',
   label: 'Filter:',
   children: [
@@ -135,7 +134,7 @@ function to_dict(arr){
   return dico
 }
 const arrayColumn = (arr, n) => arr.map(x => x[n]);
-const average_score = (arr, dico) => arr.map(x => average([x[dico['percentage_fidelity']],x[dico['percentage_stability']]]));
+const average_score = (arr, dico) => arr.map(x => average( categories.map(c => x[dico['percentage_' + c]])));
 
 function sql(explainer, checked){
   var where = checked.filter(checkbox_id => checkbox_id in node_sql).map( x => node_sql[x]).join(' AND ')
@@ -290,12 +289,37 @@ function SQLRepl({ db }) {
 
   const explainer_df = results[1]
   const explainer_column = to_dict(explainer_df.columns);
-  const explainer_description = explainer_df.values[0][explainer_column['description']];
+  const explainer_row = df.values.filter(row => row[column['explainer']] == selected_explainer )
+  const explainer_cat_scores = categories.map(c => explainer_row[0][column['percentage_' + c]]);
+  const explainer_scores = [{
+    type: 'bar',
+    x: explainer_cat_scores, // todo handel nan values
+    y: categories,
+    text: explainer_cat_scores,
+    orientation: 'h'
+  }];
 
-
+  const explainer_layout = {
+    title: 'Score per category',
+    font:{
+      family: 'Raleway, sans-serif'
+    },
+    showlegend: false,
+    xaxis: {
+      tickangle: -45
+    },
+    yaxis: {
+      // zeroline: false,
+      gridwidth: 2
+    },
+    bargap :0.05
+  };
+  
 
   return (
+    // todo add fork me on github
     <div className="App">
+      <pre className="error">{(error || "").toString()}</pre>
       <Plot
         data={data}
         layout={layout}
@@ -323,10 +347,20 @@ function SQLRepl({ db }) {
       </pre>
 
       <h1 id='explainer_title' >{selected_explainer} Explainer:</h1>
-      <pre id="description"><b>Description:</b> {explainer_description}</pre>
-      
+      <div>
+        {/* <pre id="description"><b>Description:</b> {explainer_description}</pre> */
+        explainer_df.columns.map((key, i) => (
+            <pre id="{key}"><b>{key}:</b> {explainer_df.values[0][explainer_column[key]]}</pre> 
+          ))
+        }
+      </div>
+      <Plot
+        data={explainer_scores}
+        layout={explainer_layout}
+        divId={'explainer_fig'}
+      />
 
-      <pre className="error">{(error || "").toString()}</pre>
+      <h2>Score per test:</h2>
 
       <pre>
         {
@@ -337,6 +371,8 @@ function SQLRepl({ db }) {
           <ResultsTable key={2} columns={results[2].columns} values={results[2].values} />
         }
       </pre>
+      
+      <pre> Want to learn more about a specific test? <a href="https://github.com/Karim-53/Compare-xAI/blob/main/data/01_raw/test.csv">check the full list here</a></pre>
 
     </div>
   );

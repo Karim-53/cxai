@@ -1,3 +1,5 @@
+docs/*.LICENSE.txt
+
 .idea/
 .vscode/
 node_modules/
