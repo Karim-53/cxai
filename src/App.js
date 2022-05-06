@@ -140,7 +140,9 @@ const average_score = (arr, dico) => arr.map(x => average([x[dico['percentage_fi
 function sql(explainer, checked){
   var where = checked.filter(checkbox_id => checkbox_id in node_sql).map( x => node_sql[x]).join(' AND ')
   if (where.length > 0) where = 'Where ' + where + ' \n'
-  const r = `SELECT	c.explainer,
+  const r = `
+  -- For Plotly
+  SELECT	c.explainer,
 ROUND(AVG(c.time),2) AS time_per_test,
 count(c.score) AS eligible_points,
 ` + pecentage_per_category + ` 
@@ -150,6 +152,13 @@ Left JOIN explainer AS xai ON c.explainer = xai.explainer
 ` + where + ` 
 GROUP BY c.explainer;
 
+-- details about the selected explainer
+SELECT	description, p.source_paper_bibliography, source_code, supported_models, outputs, required_input_data
+FROM explainer AS xai
+Left JOIN paper AS p ON xai.source_paper_tag = p.source_paper_tag
+Where (explainer = '`+explainer+`');
+
+-- detailed scoring of the selected explainer
 SELECT	category AS test_category, test.test, subtest, ROUND(score,2), ROUND(time),
 test.description AS test_description
 FROM cross_tab
@@ -279,8 +288,9 @@ function SQLRepl({ db }) {
     title:"Global overview of the explainers' performance<br><b>Tip</b>: Click on an explainer for more details"
   };  // todo [after acceptance] autosize: true, https://dev.to/dheerajmurali/building-a-responsive-chart-in-react-with-plotly-js-4on8
 
-  // Plotly.newPlot('myDiv', data, layout);
-
+  const explainer_df = results[1]
+  const explainer_column = to_dict(explainer_df.columns);
+  const explainer_description = explainer_df.values[0][explainer_column['description']];
 
 
 
@@ -308,21 +318,23 @@ function SQLRepl({ db }) {
       {/* Kept XAI 11 / 11  Kept tests 18 / 18 */}
       {/* on hover help https://reactjs.org/docs/events.html */}
 
-      <h1 id='explainer_title' >{selected_explainer} Explainer:</h1>
+      <pre>
+          <ResultsTable key={0} columns={results[0].columns} values={results[0].values} />
+      </pre>
 
-      {/* <textarea
-        onChange={(e) => sql_exec(e.target.value)}
-        placeholder="Enter some SQL. No inspiration ? Try “select sqlite_version()”"
-      ></textarea> */}
+      <h1 id='explainer_title' >{selected_explainer} Explainer:</h1>
+      <pre id="description"><b>Description:</b> {explainer_description}</pre>
+      
 
       <pre className="error">{(error || "").toString()}</pre>
 
       <pre>
         {
           // results contains one object per select statement in the query
-          results.map(({ columns, values }, i) => (
-            <ResultsTable key={i} columns={columns} values={values} />
-          ))
+          // results.map(({ columns, values }, i) => (
+          //   <ResultsTable key={i} columns={columns} values={values} />
+          // ))
+          <ResultsTable key={2} columns={results[2].columns} values={results[2].values} />
         }
       </pre>
 
