@@ -241,7 +241,7 @@ function SQLRepl({ db }) {
     y: pareto_percentage,
     mode: 'lines',
     type: 'scatter',
-    name: 'Pareto front<br><b>Tip</b>: Click on<br>an explainer<br>for more details',
+    name: 'Pareto front',
     // text: ['B-a', 'B-b', 'B-c', 'B-d', 'B-e'],
     textfont : {
       family:'Times New Roman'
@@ -249,14 +249,7 @@ function SQLRepl({ db }) {
     textposition: 'bottom center',
     // marker: { size: 6 }
   };
-  var trace3 = {
-    x: [],
-    y: [],
-    mode: 'lines',
-    type: 'scatter',
-    name: '<b>Tip</b>: Click on<br>an explainer<br>for more details',
-  };
-  var data = [ trace1, trace2, trace3 ];
+  var data = [ trace1, trace2 ];
 
   var layout = {
     xaxis: {
@@ -283,7 +276,7 @@ function SQLRepl({ db }) {
       }
     },
 
-    title:"Global overview of the explainers' performance"
+    title:"Global overview of the explainers' performance<br><b>Tip</b>: Click on an explainer for more details"
   };  // todo [after acceptance] autosize: true, https://dev.to/dheerajmurali/building-a-responsive-chart-in-react-with-plotly-js-4on8
 
   // Plotly.newPlot('myDiv', data, layout);
@@ -315,7 +308,7 @@ function SQLRepl({ db }) {
       {/* Kept XAI 11 / 11  Kept tests 18 / 18 */}
       {/* on hover help https://reactjs.org/docs/events.html */}
 
-      <h1 id='explainer_title' >Click on an explainer for more details</h1>
+      <h1 id='explainer_title' >{selected_explainer} Explainer:</h1>
 
       {/* <textarea
         onChange={(e) => sql_exec(e.target.value)}
