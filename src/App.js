@@ -11,6 +11,11 @@ import "react-checkbox-tree/lib/react-checkbox-tree.css";  // https://github.com
 // import DataTable from 'react-data-table-component'; todo [after acceptance] https://datatables.net/
 import jump from "./jump.js";
 const nodes = [
+  
+{ // todo include all of them in one big node "Filter:"
+  value: 'main_checklist',
+  label: 'Filter:',
+  children: [
 { // todo include all of them in one big node "Filter:"
   value: 'supported_model_checklist',
   label: 'I need to explain specific AI model(s):',
@@ -66,7 +71,7 @@ const nodes = [
 //   value: 'uid',
 //   label: 'visible'
 // },
-];
+]}];
 
 var node_sql = {}
 function flatten_nodes(nodes, node_sql){
@@ -236,7 +241,7 @@ function SQLRepl({ db }) {
     y: pareto_percentage,
     mode: 'lines',
     type: 'scatter',
-    name: 'Pareto front',
+    name: 'Pareto front<br><b>Tip</b>: Click on<br>an explainer<br>for more details',
     // text: ['B-a', 'B-b', 'B-c', 'B-d', 'B-e'],
     textfont : {
       family:'Times New Roman'
@@ -244,7 +249,14 @@ function SQLRepl({ db }) {
     textposition: 'bottom center',
     // marker: { size: 6 }
   };
-  var data = [ trace1, trace2 ];
+  var trace3 = {
+    x: [],
+    y: [],
+    mode: 'lines',
+    type: 'scatter',
+    name: '<b>Tip</b>: Click on<br>an explainer<br>for more details',
+  };
+  var data = [ trace1, trace2, trace3 ];
 
   var layout = {
     xaxis: {
@@ -287,7 +299,7 @@ function SQLRepl({ db }) {
         onClick={plotly_click}
         divId={'fig'}
       />
-      <h1>Filters</h1> 
+      {/* <h1>Filters</h1>  */}
       <pre>
         <CheckboxTree
             nodes={nodes}
