@@ -9,6 +9,7 @@ import Plot from 'react-plotly.js';
 import CheckboxTree from 'react-checkbox-tree';  // https://jakezatecky.github.io/react-checkbox-tree/
 import "react-checkbox-tree/lib/react-checkbox-tree.css";  // https://github.com/jakezatecky/react-checkbox-tree   
 // import DataTable from 'react-data-table-component'; todo [after acceptance] https://datatables.net/
+import jump from "./jump.js";
 const nodes = [
 { // todo include all of them in one big node "Filter:"
   value: 'supported_model_checklist',
@@ -73,7 +74,6 @@ function flatten_nodes(nodes, node_sql){
   nodes.map( x => {if ('children' in x) flatten_nodes(x.children, node_sql)})
 }
 flatten_nodes(nodes, node_sql)
-console.log('node_sql', node_sql)
 
 function average(data) {
   /*Can't find an average function in JS, made one
@@ -179,6 +179,7 @@ function SQLRepl({ db }) {
       setResults([]);
     }
   }
+
   function plotly_click(data){
     console.log('plotly_click:')
     console.log(data)
@@ -187,6 +188,7 @@ function SQLRepl({ db }) {
     let explainer = data.points[0].text
   
     setExplainer(explainer)
+    jump('explainer_title')
   }
   console.log('passed explainer', selected_explainer)
   console.log(results)
