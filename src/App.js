@@ -34,38 +34,24 @@ const nodes = [
       // # Definition 1 (Statistical Non-Additive Interaction). A function f contains a statistical non-additive interaction of multiple features indexed in set I if and only if f cannot be decomposed into a sum of |I| subfunctions fi , each excluding the i-th interaction variable: f(x) =/= Sum i∈I fi(x\{i}).
       // #  Def. 1 identifies a non-additive effect among all features I on the output of function f (Friedman and Popescu, 2008; Sorokina et al., 2008; Tsang et al., 2018a). see https://arxiv.org/pdf/2103.03103.pdf
       // # todo [after acceptance] we need a page with a clear description of each option
-      { value: 'todo1', label: '#Future work: Pair interaction (Local Ex), multi F interaction, NLP, debugging ...', disabled:true  }
+      // { value: 'todo1', label: '#Future work: Pair interaction (Local Ex), multi F interaction, NLP, debugging ...', disabled:true  }
   ]
 },
-{
-  value: 'required_input_data_',
-  label: 'Check if we can NOT provide the following information to the xAI algorithm:',
+{ value: 'required_input_data_', label: 'Check if we can NOT provide the following information to the xAI algorithm:',
   children: [
       { value: 'required_input_X_reference', label: 'A reference input data', sql:'xai.required_input_X_reference = 0' },
       { value: 'required_input_truth_to_explain', label: 'Target values of the data points to explain (truth, not prediction)', sql:'xai.required_input_truth_to_explain = 0' },
   ]
 },
-{
-  value: 'explainer_input_xai_',
-  label: 'Check if we can NOT execute the following operations on the AI model:',
+{ value: 'explainer_input_xai_', label: 'Check if we can NOT execute the following operations on the AI model:',
   children: [
-      { value: 'required_input_predict_func', label: 'Perform addional predictions.', sql:'xai.required_input_predict_func = 0' },
-      { value: 'required_input_train_function', label: '#Future work: Retrain the model.', disabled:true },
+      { value: 'required_input_predict_func', label: 'Perform addional predictions.', sql:'xai.required_input_predict_func = 0' }
+      // { value: 'required_input_train_function', label: '#Future work: Retrain the model.', disabled:true },
   ]
 },
-{
-  value: 'test_adversarial_attacks',
-  label: 'I trust the xAI output (I created the data and the model myself)',
-  sql: "t.category != 'fragility'"
-},
-{
-  value: 'assumptions_data_distribution_iid',
-  label: '#Future work: Assume input features to be independent and identically distributed', disabled:true 
-},
-{
-  value: 'explainer_need_gpu',
-  label: '#Future work: Constraint on hardware equipement: xAI alg. require a GPU.', disabled:true 
-}
+{ value: 'test_adversarial_attacks', label: 'I trust the xAI output (I created the data and the model myself)', sql: "t.category != 'fragility'"}
+// { value: 'assumptions_data_distribution_iid', label: '#Future work: Assume input features to be independent and identically distributed', disabled:true },
+// { value: 'explainer_need_gpu', label: '#Future work: Constraint on hardware equipement: xAI alg. require a GPU.', disabled:true }
 // {
 //   value: 'uid',
 //   label: 'visible'
@@ -93,7 +79,7 @@ function average(data) {
     if (count) {var average = Number( sum / count)} else { average=null}
     return average;
   }
-if (window.location.href.includes("localhost")) { console.log('localhost');}
+// if (window.location.href.includes("localhost")) { console.log('localhost');}
 
 const categories = ['fidelity', 'fragility', 'stability', 'simplicity', 'stress']  // todo get it from db
 const pecentage_per_category = categories.map(category => ' ROUND(AVG(case category when \''+category+'\' then score end)*100.0,1) AS percentage_'+category).join(',\n ');
@@ -165,7 +151,7 @@ Left JOIN test ON cross_tab.test = test.test
 Where (explainer = '`+explainer+`') and (score IS NOT NULL)
 Order By test_category, test_subtest;
 `;
-console.log(r)
+// console.log(r)
 return r
 }
 /**
@@ -180,7 +166,7 @@ function SQLRepl({ db }) {
   const [error, setError] = useState(null);
   
   // console.log(sql(selected_explainer));
-  console.log('checked', checked);
+  // console.log('checked', checked);
   function sql_exec(new_sql) {
     try {
       // The sql is executed synchronously on the UI thread. You may want to use a web worker here instead
@@ -203,9 +189,9 @@ function SQLRepl({ db }) {
     setExplainer(explainer)
     jump('explainer_title')
   }
-  console.log('passed explainer', selected_explainer)
-  console.log(results)
-  console.log(error)
+  // console.log('passed explainer', selected_explainer)
+  // console.log(results)
+  // console.log(error)
   var df;
   df = results[0];
   var column = to_dict(df.columns);
@@ -216,7 +202,7 @@ function SQLRepl({ db }) {
   const time_per_test = arrayColumn(df.values, column['time_per_test']);
   const eligible_points = arrayColumn(df.values, column['eligible_points']);
   const text = arrayColumn(df.values, column['explainer']);
-  console.log(df)
+  // console.log(df)
 
   var merged = []
   for (let i = 0; i < time_per_test.length; i++) {
@@ -269,7 +255,7 @@ function SQLRepl({ db }) {
       }
     },
     yaxis: {
-      // range: [0, 100], todo
+      range: [1, 100],
       title: {
         text: 'Score [%] ↑'
       }
@@ -290,7 +276,14 @@ function SQLRepl({ db }) {
   const explainer_df = results[1]
   const explainer_column = to_dict(explainer_df.columns);
   const explainer_row = df.values.filter(row => row[column['explainer']] == selected_explainer )
-  const explainer_cat_scores = categories.map(c => explainer_row[0][column['percentage_' + c]]);
+
+
+  const explainer_cat_scores = (explainer_row.length > 0) ? categories.map(c => explainer_row[0][column['percentage_' + c]]) : categories.map(c => null)
+  const explainer_error = (explainer_row.length > 0) ? '' : `With the applied filters, none of remaining unit tests could be applied on this explainer,
+  please select another one by clicking on a blue dot in the first figure.`
+  // console.log(df.columns)
+  // console.log(explainer_row)
+  
   const explainer_scores = [{
     type: 'bar',
     x: explainer_cat_scores, // todo handel nan values
@@ -306,11 +299,18 @@ function SQLRepl({ db }) {
     },
     showlegend: false,
     xaxis: {
-      tickangle: -45
+      tickangle: -45,
+      range: [1, 100],
+      title: {
+        text: 'Score [%] ↑'
+      }
     },
     yaxis: {
       // zeroline: false,
-      gridwidth: 2
+      gridwidth: 2,
+      title: {
+        text: 'Sub scoring cartegories'
+      }
     },
     bargap :0.05
   };
@@ -320,15 +320,6 @@ function SQLRepl({ db }) {
     // todo add fork me on github
     <div className="App">
       <pre className="error">{(error || "").toString()}</pre>
-      <Plot
-        data={data}
-        layout={layout}
-        onClick={plotly_click}
-        onHover={data => document.getElementsByClassName('nsewdrag')[0].style.cursor = 'pointer'}
-        onUnhover={data => document.getElementsByClassName('nsewdrag')[0].style.cursor = ''}
-        divId={'fig'}
-      />
-      {/* <h1>Filters</h1>  */}
       <pre>
         <CheckboxTree
             nodes={nodes}
@@ -339,21 +330,31 @@ function SQLRepl({ db }) {
             showExpandAll={true}
         />
       </pre>
+      <Plot
+        data={data}
+        layout={layout}
+        onClick={plotly_click}
+        onHover={data => document.getElementsByClassName('nsewdrag')[0].style.cursor = 'pointer'}
+        onUnhover={data => document.getElementsByClassName('nsewdrag')[0].style.cursor = ''}
+        divId={'fig'}
+      />
       {/* Kept XAI 11 / 11  Kept tests 18 / 18 */}
       {/* on hover help https://reactjs.org/docs/events.html */}
 
       <pre>
-          <ResultsTable key={0} columns={results[0].columns} values={results[0].values} />
+          <ResultsTable columns={results[0].columns} values={results[0].values} />
       </pre>
 
       <h1 id='explainer_title' >{selected_explainer} Explainer:</h1>
       <div>
         {/* <pre id="description"><b>Description:</b> {explainer_description}</pre> */
         explainer_df.columns.map((key, i) => (
-            <pre id="{key}"><b>{key}:</b> {explainer_df.values[0][explainer_column[key]]}</pre> 
+            <pre><b>{key}:</b> {explainer_df.values[0][explainer_column[key]]}</pre> 
           ))
         }
       </div>
+      
+      <pre className="error">{(explainer_error || "").toString()}</pre>
       <Plot
         data={explainer_scores}
         layout={explainer_layout}
@@ -368,11 +369,11 @@ function SQLRepl({ db }) {
           // results.map(({ columns, values }, i) => (
           //   <ResultsTable key={i} columns={columns} values={values} />
           // ))
-          <ResultsTable key={2} columns={results[2].columns} values={results[2].values} />
+          <ResultsTable columns={results[2].columns} values={results[2].values}/>
         }
       </pre>
       
-      <pre> Want to learn more about a specific test? <a href="https://github.com/Karim-53/Compare-xAI/blob/main/data/01_raw/test.csv">check the full list here</a></pre>
+      <pre> Want to learn more about a specific test? <a href="https://github.com/Karim-53/Compare-xAI/blob/main/data/01_raw/test.csv">check the full list here !</a></pre>
 
     </div>
   );
