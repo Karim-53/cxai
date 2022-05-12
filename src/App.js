@@ -348,8 +348,8 @@ function SQLRepl({ db }) {
       <h1 id='explainer_title' >{selected_explainer} Explainer:</h1>
       <div>
         {/* <pre id="description"><b>Description:</b> {explainer_description}</pre> */
-        explainer_df.columns.map((key, i) => (
-            <pre><b>{key}:</b> {explainer_df.values[0][explainer_column[key]]}</pre> 
+        explainer_df.columns.map((explainer_property, i) => (
+            <pre><b>{explainer_property}:</b> {explainer_df.values[0][explainer_column[explainer_property]]}</pre> 
           ))
         }
       </div>
