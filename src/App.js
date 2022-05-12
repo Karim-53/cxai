@@ -126,7 +126,7 @@ function sql(explainer, checked){
   var where = checked.filter(checkbox_id => checkbox_id in node_sql).map( x => node_sql[x]).join(' AND ')
   if (where.length > 0) where = 'Where ' + where + ' \n'
   const r = `
-  -- For Plotly
+  --0 For Plotly
   SELECT	c.explainer,
 ROUND(AVG(c.time),2) AS time_per_test,
 count(c.score) AS eligible_points,
@@ -137,19 +137,31 @@ Left JOIN explainer AS xai ON c.explainer = xai.explainer
 ` + where + ` 
 GROUP BY c.explainer;
 
--- details about the selected explainer
+--1 details about the selected explainer
 SELECT	description, p.source_paper_bibliography, source_code, supported_models, outputs, required_input_data
 FROM explainer AS xai
 Left JOIN paper AS p ON xai.source_paper_tag = p.source_paper_tag
 Where (explainer = '`+explainer+`');
 
--- detailed scoring of the selected explainer
+--2 detailed scoring of the selected explainer
 SELECT	category AS test_category, test.test, subtest, ROUND(score,2), ROUND(time),
 test.description AS test_description
 FROM cross_tab
 Left JOIN test ON cross_tab.test = test.test
 Where (explainer = '`+explainer+`') and (score IS NOT NULL)
 Order By test_category, test_subtest;
+
+--3 Kept Unit tests
+SELECT	count(DISTINCT c.test_subtest) AS kept_tests
+FROM cross_tab AS c
+Left JOIN test AS t ON c.test = t.test
+Left JOIN explainer AS xai ON c.explainer = xai.explainer
+` + where + `;
+
+--4 total xAi and tests
+SELECT	count(DISTINCT c.test_subtest) AS total_eligible_points,
+    	count(DISTINCT c.explainer) AS total_explainers
+FROM cross_tab AS c;
 `;
 // console.log(r)
 return r
@@ -187,23 +199,21 @@ function SQLRepl({ db }) {
     let explainer = data.points[0].text
   
     setExplainer(explainer)
-    jump('explainer_title')
+    jump('explainer_limits')
   }
-  // console.log('passed explainer', selected_explainer)
-  // console.log(results)
-  // console.log(error)
   var df;
   df = results[0];
   var column = to_dict(df.columns);
 
-  //const percentagefidelity = arrayColumn(df.values, column['percentagefidelity']);
   const percentage = average_score(df.values, column)
-  // const percentage = arrayColumn(df.values, column['percentage']);
   const time_per_test = arrayColumn(df.values, column['time_per_test']);
   const eligible_points = arrayColumn(df.values, column['eligible_points']);
   const text = arrayColumn(df.values, column['explainer']);
-  // console.log(df)
-
+  
+  const kept_xai = df.values.length
+  const kept_tests = results[3].values[0][0]
+  const total_eligible_points = results[4].values[0][0]
+  const total_explainers = results[4].values[0][1]
   var merged = []
   for (let i = 0; i < time_per_test.length; i++) {
     merged.push([percentage[i], time_per_test[i]]);
@@ -216,7 +226,7 @@ function SQLRepl({ db }) {
   // }
 
 
-  var trace1 = { // todo after acceptance Plotly.animate('graph', { https://plotly.com/javascript/plotlyjs-function-reference/#plotlyanimate
+  const trace1 = { // todo after acceptance Plotly.animate('graph', { https://plotly.com/javascript/plotlyjs-function-reference/#plotlyanimate
     x: time_per_test,
     y: percentage,
     mode: 'markers+text',
@@ -230,7 +240,7 @@ function SQLRepl({ db }) {
     marker: { size: eligible_points }
   };
 
-  var trace2 = {
+  const trace2 = {
     x: pareto_time_per_test,
     y: pareto_percentage,
     mode: 'lines',
@@ -243,21 +253,23 @@ function SQLRepl({ db }) {
     textposition: 'bottom center',
     // marker: { size: 6 }
   };
-  var data = [ trace1, trace2 ];
+  const data = [ trace1, trace2 ];
 
-  var layout = {
+  const layout = {
+    width: 900,
+    height: 580,
     xaxis: {
       // range: [ 0.75, 5.25 ],
       type: 'log',
       autorange: true,
       title: {
-        text: 'Average Time per test [Seconds] ↓'
+        text: 'Fast alg. <--     Average Time per test [Seconds] ↓     --> Slow alg.'
       }
     },
     yaxis: {
       range: [1, 100],
       title: {
-        text: 'Score [%] ↑'
+        text: 'Poor <--  Average Score per test [%] ↑  --> Excelent'
       }
     },
     legend: {
@@ -267,10 +279,27 @@ function SQLRepl({ db }) {
         family: 'Arial, sans-serif',
         // size: 20,
         // color: 'grey',
-      }
+      },
     },
+    annotations: [
+      {
+        x: 0.01,
+        y: 100,
+        xref: 'paper',
+        yref: 'y',
+        text: 'Best xAI(s) are close to this point',
+        showarrow: true,
+        arrowhead: 7,
+        ax: 15 ,
+        ay: -35,
+        font: {color:'#636363'},
+        arrowcolor:'#636363',
+      }
+    ],
 
-    title:"Global overview of the explainers' performance<br><b>Tip</b>: Click on an explainer for more details"
+    title:{
+      text:"Global overview of the explainers' performance<br><b>Tip</b>: Click on an explainer for more details",
+    }
   };  // todo [after acceptance] autosize: true, https://dev.to/dheerajmurali/building-a-responsive-chart-in-react-with-plotly-js-4on8
 
   const explainer_df = results[1]
@@ -314,12 +343,16 @@ function SQLRepl({ db }) {
     },
     bargap :0.05
   };
-  
+
+  const too_much_filters = (kept_xai<=1) ? "None of the indexed xAI satisfy the selected constrains. Please use less filters." : ""
 
   return (
     // todo add fork me on github
     <div className="App">
       <pre className="error">{(error || "").toString()}</pre>
+      <h1 id='Filters' >1. shortlist xAI that fit your needs:</h1>
+      <pre>Use the filters below to describe the xAI model and the dataset you would like to explain. <a href="filters.html">Click here to learn more about each constrain</a></pre>
+
       <pre>
         <CheckboxTree
             nodes={nodes}
@@ -330,6 +363,13 @@ function SQLRepl({ db }) {
             showExpandAll={true}
         />
       </pre>
+      <pre>Using the selected filters, we keep <b> {kept_xai} xAI tool(s) out of {total_explainers}</b> and <b>{kept_tests} Unit-test(s) out of {total_eligible_points}</b>.   </pre>
+      <pre className="error">{(too_much_filters || "").toString()}</pre>
+      <pre>Every unit-test evaluate a specific aspect of the xAI algorithm. <a href="test/index.html">Learn more about our unit-tests and the selection protocol.</a></pre>
+
+      <h1 id='Overview_Plot' >2. Evaluate selected xAI using an intuitive scoring method:</h1>
+      <pre>The scatter plot figure below summarize the average performance of the selected xAI(s).
+A perfect xAI should obtain a score of 100% and finish all tests in the smallest amount of time.</pre>
       <Plot
         data={data}
         layout={layout}
@@ -345,7 +385,7 @@ function SQLRepl({ db }) {
           <ResultsTable columns={results[0].columns} values={results[0].values} />
       </pre>
 
-      <h1 id='explainer_title' >{selected_explainer} Explainer:</h1>
+      <h1 id='explainer_limits' >{selected_explainer} Explainer: (See the limit of the selected xAI)</h1>
       <div>
         {/* <pre id="description"><b>Description:</b> {explainer_description}</pre> */
         explainer_df.columns.map((explainer_property, i) => (
@@ -372,9 +412,6 @@ function SQLRepl({ db }) {
           <ResultsTable columns={results[2].columns} values={results[2].values}/>
         }
       </pre>
-      
-      <pre> Want to learn more about a specific test? <a href="https://github.com/Karim-53/Compare-xAI/blob/main/data/01_raw/test.csv">check the full list here !</a></pre>
-
     </div>
   );
 }

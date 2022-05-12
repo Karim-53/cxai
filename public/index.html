@@ -10,9 +10,17 @@
       homescreen on Android. See https://developers.google.com/web/fundamentals/engage-and-retain/web-app-manifest/
 	<link rel="manifest" href="%PUBLIC_URL%/manifest.json">
     -->
-	<link rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico">
+	<link async rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico">
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+  <link async rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-DQV8VB7FD2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-DQV8VB7FD2');
+  </script>
 	<!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.
@@ -26,10 +34,20 @@
 </head>
 
 <body>
+  <pre><b>Abstract</b>: Are you wondering what is the difference between public explainable AI (xAI) tools ?
+ Compare-xAI helps you:
+    <a href="#Filters">1. shortlist xAI that fit your needs</a>
+    <a href="#Overview_Plot">2. Evaluate them using an intuitive scoring method</a> then select one xAI.
+    <a href="#explainer_limits">3. See the limit of the selected xAI</a>
+
+ Don't forget to <a href="about.html">cite our paper</a> :)
+  </pre>
+      
 	<noscript>
 		You need to enable JavaScript to run this app.
 	</noscript>
 	<div id="root"></div>
+  <pre> Want to learn more about a specific test? <a href="https://github.com/Karim-53/Compare-xAI/blob/main/data/01_raw/test.csv" target="_blank">check the full list here !</a></pre>
 	<!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.
