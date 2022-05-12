@@ -237,7 +237,7 @@ function SQLRepl({ db }) {
     textfont: {
       family:  'Raleway, sans-serif'
     },
-    marker: { size: eligible_points }
+    marker: { size: eligible_points.map(x => 2*x) }
   };
 
   const trace2 = {
@@ -351,7 +351,7 @@ function SQLRepl({ db }) {
     <div className="App">
       <pre className="error">{(error || "").toString()}</pre>
       <h1 id='Filters' >1. shortlist xAI that fit your needs:</h1>
-      <pre>Use the filters below to describe the xAI model and the dataset you would like to explain. <a href="filters.html">Click here to learn more about each constrain</a></pre>
+      <pre>Use the filters below to describe the xAI model and the dataset you would like to explain. <a href="filters.html">Click here to learn more about each constrain.</a></pre>
 
       <pre>
         <CheckboxTree
@@ -365,11 +365,16 @@ function SQLRepl({ db }) {
       </pre>
       <pre>Using the selected filters, we keep <b> {kept_xai} xAI tool(s) out of {total_explainers}</b> and <b>{kept_tests} Unit-test(s) out of {total_eligible_points}</b>.   </pre>
       <pre className="error">{(too_much_filters || "").toString()}</pre>
-      <pre>Every unit-test evaluate a specific aspect of the xAI algorithm. <a href="test/index.html">Learn more about our unit-tests and the selection protocol.</a></pre>
+      <pre>Below, we test every xAI on these {kept_tests} unit-test(s). Every unit-test evaluate a specific aspect of the xAI algorithm (the <b>fidelity</b> of the explanation to the AI behavior, the <b>stability</b> xAi against minor change in the AI, etc.). <a href="test/index.html">Learn more about implemented unit-tests and how the selection was done.</a></pre>
 
       <h1 id='Overview_Plot' >2. Evaluate selected xAI using an intuitive scoring method:</h1>
-      <pre>The scatter plot figure below summarize the average performance of the selected xAI(s).
-A perfect xAI should obtain a score of 100% and finish all tests in the smallest amount of time.</pre>
+      <pre>The bubble plot below summarizes the average performance of the selected xAI(s): time on x-axis v.s. score in percentage on y-axis.<br/>
+A perfect xAI should obtain a score of 100% and finish all {kept_tests} tests in the smallest amount of time. Therefore, it would be located on top right.<br/>
+Moreover, some xAI might break while running, because of algorithmic/implementation issues. The dot size represent the number of tests completed without failiure. Thus, a higher portability is described with a bigger dot.<br/>
+<a href="filters.html">Learn more about how to read the overview plot.</a>
+
+
+</pre>
       <Plot
         data={data}
         layout={layout}
