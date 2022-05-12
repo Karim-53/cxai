@@ -1,8 +1,8 @@
 {
   "files": {
     "main.css": "/cxai/static/css/main.29f1f53d.chunk.css",
-    "main.js": "/cxai/static/js/main.edc39628.chunk.js",
-    "main.js.map": "/cxai/static/js/main.edc39628.chunk.js.map",
+    "main.js": "/cxai/static/js/main.debfb67b.chunk.js",
+    "main.js.map": "/cxai/static/js/main.debfb67b.chunk.js.map",
     "runtime-main.js": "/cxai/static/js/runtime-main.ee0f6e99.js",
     "runtime-main.js.map": "/cxai/static/js/runtime-main.ee0f6e99.js.map",
     "static/css/2.870c4026.chunk.css": "/cxai/static/css/2.870c4026.chunk.css",
@@ -13,13 +13,13 @@
     "static/css/2.870c4026.chunk.css.map": "/cxai/static/css/2.870c4026.chunk.css.map",
     "static/css/main.29f1f53d.chunk.css.map": "/cxai/static/css/main.29f1f53d.chunk.css.map",
     "static/js/2.b6772bc3.chunk.js.LICENSE.txt": "/cxai/static/js/2.b6772bc3.chunk.js.LICENSE.txt",
-    "static/media/database.7b3c1e07.bin": "/cxai/static/media/database.7b3c1e07.bin"
+    "static/media/database.e27bc840.bin": "/cxai/static/media/database.e27bc840.bin"
   },
   "entrypoints": [
     "static/js/runtime-main.ee0f6e99.js",
     "static/css/2.870c4026.chunk.css",
     "static/js/2.b6772bc3.chunk.js",
     "static/css/main.29f1f53d.chunk.css",
-    "static/js/main.edc39628.chunk.js"
+    "static/js/main.debfb67b.chunk.js"
   ]
 }
