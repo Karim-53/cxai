@@ -83,7 +83,15 @@ function average(data) {
 
 const categories = ['fidelity', 'fragility', 'stability', 'simplicity', 'stress']  // todo get it from db
 const pecentage_per_category = categories.map(category => ' ROUND(AVG(case category when \''+category+'\' then score end)*100.0,1) AS percentage_'+category).join(',\n ');
-
+const sql_to_nice_name = {'explainer':'Explainer',
+  'time_per_test':'Average time per test',
+  'eligible_points':'Number of compleated tests',
+  'percentage_fidelity':'Fidelity [%]',
+  'percentage_fragility':'Fragility [%]',
+  'percentage_stability':'Stability [%]',
+  'percentage_simplicity':'Simplicity [%]',
+  'percentage_stress':'Stress test [%]',
+}
 export default function App() {
   const [db, setDb] = useState(null);
   const [error, setError] = useState(null);
@@ -138,7 +146,12 @@ Left JOIN explainer AS xai ON c.explainer = xai.explainer
 GROUP BY c.explainer;
 
 --1 details about the selected explainer
-SELECT	description, p.source_paper_bibliography, source_code, supported_models, outputs, required_input_data
+SELECT	description AS 'xAI description',
+        supported_models AS 'Supported AI models',
+        outputs AS 'xAI outputs',
+        required_input_data AS 'Required info by the xAI',
+        p.source_paper_bibliography AS 'Original paper',
+        source_code AS 'Source code'
 FROM explainer AS xai
 Left JOIN paper AS p ON xai.source_paper_tag = p.source_paper_tag
 Where (explainer = '`+explainer+`');
@@ -151,8 +164,8 @@ tested_xai_output AS 'Tested_xAI_output________'
 FROM cross_tab
 Left JOIN test ON cross_tab.test = test.test
 Where (explainer = '`+explainer+`') and (score IS NOT NULL)
-Order By 'test category';
--- order also by test_subtest, 'Tested_xAI_output________';
+Order By Score;
+-- order also by 'test category' test_subtest, 'Tested_xAI_output________';
 
 --3 Kept Unit tests
 SELECT	count(DISTINCT c.test_subtest) AS kept_tests
@@ -328,7 +341,7 @@ function SQLRepl({ db }) {
     ],
 
     title:{
-      text:"Global overview of the explainers' performance<br><b>Tip</b>: Click on an explainer for more details",
+      text:"<b>Figure 1</b>: Global overview of the explainers' performance<br><b>Tip</b>: Click on an explainer for more details",
     }
   };  // todo [after acceptance] autosize: true, https://dev.to/dheerajmurali/building-a-responsive-chart-in-react-with-plotly-js-4on8
 
@@ -345,14 +358,16 @@ function SQLRepl({ db }) {
   
   const explainer_scores = [{
     type: 'bar',
-    x: explainer_cat_scores, // todo handel nan values
-    y: categories,
+    x: explainer_cat_scores.reverse(), // todo handel nan values
+    y: categories.reverse(),
     text: explainer_cat_scores,
-    orientation: 'h'
+    orientation: 'h',
   }];
 
   const explainer_layout = {
-    title: 'Score per category',
+    // height:280,
+    height:320,
+    title: '<b>Figure 2</b>: Score of '+ selected_explainer +' per category',
     font:{
       family: 'Raleway, sans-serif'
     },
@@ -375,7 +390,7 @@ function SQLRepl({ db }) {
   };
 
   const too_much_filters = (kept_xai<=1) ? "None of the indexed xAI satisfy the selected constrains. Please use less filters." : ""
-
+  const arxiv = 'https://arxiv.org/' // todo 
   return (
     // todo add fork me on github
     <div className="App">
@@ -400,8 +415,8 @@ function SQLRepl({ db }) {
       <h1 id='Overview_Plot' >2. Evaluate selected xAI using an intuitive scoring method:</h1>
       <pre>The bubble plot below summarizes the average performance of the selected xAI(s): time on x-axis v.s. score in percentage on y-axis.<br/>
 A perfect xAI should obtain a score of 100% and finish all {kept_tests} tests in the smallest amount of time. Therefore, it would be located on top right.<br/>
-Moreover, some xAI might break while running, because of algorithmic/implementation issues. The dot size represent the number of tests completed without failiure. Thus, a higher portability is described with a bigger dot.<br/>
-<a href="filters.html">Learn more about the overview plot.</a>
+Moreover, some xAI might break while running, because of algorithmic/implementation issues. The dot size represent the number of tests completed without failiure. Thus, a higher portability is described with a bigger dot. 
+<a href={arxiv} target="_blank">Learn more about the overview plot.</a>
 </pre>
       <Plot
         data={data}
@@ -411,16 +426,24 @@ Moreover, some xAI might break while running, because of algorithmic/implementat
         onUnhover={data => document.getElementsByClassName('nsewdrag')[0].style.cursor = ''}
         divId={'fig'}
       />
-            <pre>You can see the detailed scoring in the table below of the values .......</pre>
+      <pre> An xAI can obtain a good average score but it might completly fail in a specific category of tests. <b>Table 1</b> contains a more detailed scoring method by subdividing the score into {categories.length} categories:<br/>
+      <b>Fidelity</b>:     Test if the xAI output reflect the underlying model.<br/>
+      <b>Fragility</b>:    Test if the xAI output is easily manipulable on purpose.<br/>
+      <b>Stability</b>:    Test if the xAI output is too sensitive to slight changes in the dataset/model.<br/>
+      <b>Simplicity</b>:   Users should be able to look at the explanation, and reason about model behavior.<br/>
+      <b>Stress tests</b>: Test if the xAI can explain models trained on big data.<br/>
+      <a href={arxiv} target="_blank">See our paper for more details.</a>
+      </pre>
 
       {/* on hover help https://reactjs.org/docs/events.html */}
 
       <pre>
-          <ResultsTable columns={results[0].columns} values={results[0].values} />
           <pre className="fig_title"><b>Table 1:</b> Subscores given the selected filters.</pre>
+          <ResultsTable columns={results[0].columns.map( x => sql_to_nice_name[x])} values={results[0].values} />
       </pre>
 
-      <h1 id='explainer_limits' >{selected_explainer} Explainer: (See the limit of the selected xAI)</h1>
+      <h1 id='explainer_limits' >3. {selected_explainer} Explainer: Limit of the selected xAI</h1>
+      <pre>Select one specific Explainer by clicking on a blue dot in Figure 1. Below you can find a helpful description of the explainer and its specific requirements.</pre> 
       <div>
         {/* <pre id="description"><b>Description:</b> {explainer_description}</pre> */
         explainer_df.columns.map((explainer_property, i) => (
@@ -437,17 +460,14 @@ Moreover, some xAI might break while running, because of algorithmic/implementat
       />
 
       <h2>Score per test:</h2>
-
+      <pre><b>Table 2</b> gives the most detailed scoring. Here you will learn when exactly {selected_explainer} fails in explaining a model. The table is sorted by score (increasing) so you just need to look at the few fist tests with a score below 80%.</pre>
       <pre>
-        {
-          // results contains one object per select statement in the query
-          // results.map(({ columns, values }, i) => (
-          //   <ResultsTable key={i} columns={columns} values={values} />
-          // ))
+        <pre className="fig_title"><b>Table 2:</b> Score obtained by <b>{selected_explainer} explainer</b> for each test.</pre>
+        { // results contains one object per select statement in the query // results.map(({ columns, values }, i) => (<ResultsTable key={i} columns={columns} values={values} />))
           <ResultsTable columns={results[2].columns} values={results[2].values}/>
         }
-        <pre className="fig_title"><b>Table 2:</b> Score obtained by <b>{selected_explainer} explainer</b> for each test.</pre>
       </pre>
+      <pre> Want to learn how to deal with the limitations of the {selected_explainer} explainer? <a href="https://github.com/Karim-53/Compare-xAI/blob/main/data/01_raw/test.csv" target="_blank">Learn more about the solution of each test here !</a></pre>
     </div>
   );
 }
