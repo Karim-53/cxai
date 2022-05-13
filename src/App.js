@@ -144,12 +144,15 @@ Left JOIN paper AS p ON xai.source_paper_tag = p.source_paper_tag
 Where (explainer = '`+explainer+`');
 
 --2 detailed scoring of the selected explainer
-SELECT	category AS test_category, test.test, subtest, ROUND(score,2), ROUND(time),
-test.description AS test_description
+SELECT	test.short_description AS '  ______Short_description______  ',
+ROUND(score,2) AS Score, category AS 'test category',
+tested_xai_output AS 'Tested_xAI_output________'
+--  test.test, subtest no ROUND(time) to make things readable
 FROM cross_tab
 Left JOIN test ON cross_tab.test = test.test
 Where (explainer = '`+explainer+`') and (score IS NOT NULL)
-Order By test_category, test_subtest;
+Order By 'test category';
+-- order also by test_subtest, 'Tested_xAI_output________';
 
 --3 Kept Unit tests
 SELECT	count(DISTINCT c.test_subtest) AS kept_tests
@@ -237,8 +240,34 @@ function SQLRepl({ db }) {
     textfont: {
       family:  'Raleway, sans-serif'
     },
-    marker: { size: eligible_points.map(x => 2*x) }
+    // legendgroup:"exp", // did not help :(
+    // showlegend:true,
+    marker: {
+      size: eligible_points.map(x => 2*x),
+      // showlegend:true, // did not help :(
+      // legendgroup:"size",
+     }
   };
+
+
+  // const trace1_legend = {
+  //   x: time_per_test,
+  //   y: percentage,
+  //   mode: 'markers+text',
+  //   type: 'scatter',
+  //   text: text, // hover https://plotly.com/javascript/reference/
+  //   textposition: 'top center',
+  //   textfont: {
+  //     family:  'Raleway, sans-serif'
+  //   },
+  //   marker: { size: eligible_points.map(x => 2*x) },
+
+
+
+  //   legendgroup: "size",
+  //   visible:"legendonly",
+  //   name: 'Portability: completed tests without failiure',
+  // }
 
   const trace2 = {
     x: pareto_time_per_test,
@@ -273,6 +302,7 @@ function SQLRepl({ db }) {
       }
     },
     legend: {
+      "tracegroupgap": 20,
       y: 1,
       yref: 'paper',
       font: {
@@ -371,9 +401,7 @@ function SQLRepl({ db }) {
       <pre>The bubble plot below summarizes the average performance of the selected xAI(s): time on x-axis v.s. score in percentage on y-axis.<br/>
 A perfect xAI should obtain a score of 100% and finish all {kept_tests} tests in the smallest amount of time. Therefore, it would be located on top right.<br/>
 Moreover, some xAI might break while running, because of algorithmic/implementation issues. The dot size represent the number of tests completed without failiure. Thus, a higher portability is described with a bigger dot.<br/>
-<a href="filters.html">Learn more about how to read the overview plot.</a>
-
-
+<a href="filters.html">Learn more about the overview plot.</a>
 </pre>
       <Plot
         data={data}
@@ -383,11 +411,13 @@ Moreover, some xAI might break while running, because of algorithmic/implementat
         onUnhover={data => document.getElementsByClassName('nsewdrag')[0].style.cursor = ''}
         divId={'fig'}
       />
-      {/* Kept XAI 11 / 11  Kept tests 18 / 18 */}
+            <pre>You can see the detailed scoring in the table below of the values .......</pre>
+
       {/* on hover help https://reactjs.org/docs/events.html */}
 
       <pre>
           <ResultsTable columns={results[0].columns} values={results[0].values} />
+          <pre class="fig_title"><b>Table 1:</b> Subscores given the selected filters.</pre>
       </pre>
 
       <h1 id='explainer_limits' >{selected_explainer} Explainer: (See the limit of the selected xAI)</h1>
@@ -416,6 +446,7 @@ Moreover, some xAI might break while running, because of algorithmic/implementat
           // ))
           <ResultsTable columns={results[2].columns} values={results[2].values}/>
         }
+        <pre class="fig_title"><b>Table 2:</b> Score obtained by <b>{selected_explainer} explainer</b> for each test.</pre>
       </pre>
     </div>
   );
