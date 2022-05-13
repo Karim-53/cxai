@@ -417,7 +417,7 @@ Moreover, some xAI might break while running, because of algorithmic/implementat
 
       <pre>
           <ResultsTable columns={results[0].columns} values={results[0].values} />
-          <pre class="fig_title"><b>Table 1:</b> Subscores given the selected filters.</pre>
+          <pre className="fig_title"><b>Table 1:</b> Subscores given the selected filters.</pre>
       </pre>
 
       <h1 id='explainer_limits' >{selected_explainer} Explainer: (See the limit of the selected xAI)</h1>
@@ -446,7 +446,7 @@ Moreover, some xAI might break while running, because of algorithmic/implementat
           // ))
           <ResultsTable columns={results[2].columns} values={results[2].values}/>
         }
-        <pre class="fig_title"><b>Table 2:</b> Score obtained by <b>{selected_explainer} explainer</b> for each test.</pre>
+        <pre className="fig_title"><b>Table 2:</b> Score obtained by <b>{selected_explainer} explainer</b> for each test.</pre>
       </pre>
     </div>
   );
