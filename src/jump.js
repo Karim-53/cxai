@@ -6,7 +6,7 @@ export default function jump(h) {
         end: [left, top],
         duration: 1000
     }, function(vals){
-        console.log(arguments);
+        // console.log(arguments);
     	window.scrollTo(vals[0], vals[1]);
     });
     

@@ -215,7 +215,12 @@ function SQLRepl({ db }) {
     let explainer = data.points[0].text
   
     setExplainer(explainer)
-    jump('explainer_limits')
+    try {
+      jump('Explainer_limits')
+    } catch (error) {
+      console.error(error);
+    }
+    
   }
   var df;
   df = results[0];
@@ -441,8 +446,8 @@ Moreover, some xAI might break while running, because of algorithmic/implementat
           <pre className="fig_title"><b>Table 1:</b> Subscores given the selected filters.</pre>
           <ResultsTable columns={results[0].columns.map( x => sql_to_nice_name[x])} values={results[0].values} />
       </pre>
-
-      <h1 id='explainer_limits' >3. {selected_explainer} Explainer: Limit of the selected xAI</h1>
+      <pre></pre> {/* just need some spacing */}
+      <h1 id='Explainer_details' >3. {selected_explainer} Explainer: Details</h1>
       <pre>Select one specific Explainer by clicking on a blue dot in Figure 1. Below you can find a helpful description of the explainer and its specific requirements.</pre> 
       <div>
         {/* <pre id="description"><b>Description:</b> {explainer_description}</pre> */
@@ -459,15 +464,17 @@ Moreover, some xAI might break while running, because of algorithmic/implementat
         divId={'explainer_fig'}
       />
 
-      <h2>Score per test:</h2>
-      <pre><b>Table 2</b> gives the most detailed scoring. Here you will learn when exactly {selected_explainer} fails in explaining a model. The table is sorted by score (increasing) so you just need to look at the few fist tests with a score below 80%.</pre>
+      <h1 id='Explainer_limits' >4. {selected_explainer} Explainer: Limits of the interpretability of its output</h1>
+      <pre><b>Table 2</b> gives the most detailed scoring. Here you will learn when exactly {selected_explainer} fails in explaining a model. 
+The table is sorted by score (increasing) so you just need to look at the few fist tests with a score below 80%. 
+Want to learn how to deal with the limitations of the {selected_explainer} explainer? <a href="https://github.com/Karim-53/Compare-xAI/blob/main/data/01_raw/test.csv" target="_blank">See the workaround solution for each test here !</a>
+</pre>
       <pre>
         <pre className="fig_title"><b>Table 2:</b> Score obtained by <b>{selected_explainer} explainer</b> for each test.</pre>
         { // results contains one object per select statement in the query // results.map(({ columns, values }, i) => (<ResultsTable key={i} columns={columns} values={values} />))
           <ResultsTable columns={results[2].columns} values={results[2].values}/>
         }
       </pre>
-      <pre> Want to learn how to deal with the limitations of the {selected_explainer} explainer? <a href="https://github.com/Karim-53/Compare-xAI/blob/main/data/01_raw/test.csv" target="_blank">Learn more about the solution of each test here !</a></pre>
     </div>
   );
 }
