@@ -346,7 +346,7 @@ function SQLRepl({ db }) {
     ],
 
     title:{
-      text:"<b>Figure 1</b>: Global overview of the explainers' performance<br><b>Tip</b>: Click on an explainer for more details",
+      text:"<b>Figure 1</b>: Global overview of the explainers' performance.<br><b>Tip</b>: Click on an explainer for more details.",
     }
   };  // todo [after acceptance] autosize: true, https://dev.to/dheerajmurali/building-a-responsive-chart-in-react-with-plotly-js-4on8
 
@@ -372,7 +372,7 @@ function SQLRepl({ db }) {
   const explainer_layout = {
     // height:280,
     height:320,
-    title: '<b>Figure 2</b>: Score of '+ selected_explainer +' per category',
+    title: '<b>Figure 2</b>: Score of <i>'+ selected_explainer +' Explainer</i> per category.',
     font:{
       family: 'Raleway, sans-serif'
     },
@@ -388,7 +388,7 @@ function SQLRepl({ db }) {
       // zeroline: false,
       gridwidth: 2,
       title: {
-        text: 'Sub scoring cartegories'
+        text: 'Sub scoring categories'
       }
     },
     bargap :0.05
@@ -400,8 +400,8 @@ function SQLRepl({ db }) {
     // todo add fork me on github
     <div className="App">
       <pre className="error">{(error || "").toString()}</pre>
-      <h1 id='Filters' >1. shortlist xAI that fit your needs:</h1>
-      <pre>Use the filters below to describe the xAI model and the dataset you would like to explain. <a href="filters.html">Click here to learn more about each constrain.</a></pre>
+      <h1 id='Filters' >1. shortlist xAI that fits your needs:</h1>
+      <pre>Use the filters below to describe the xAI model and the dataset you would like to explain. <a href="filters.html">Click here to learn more about each constraint.</a></pre>
 
       <pre>
         <CheckboxTree
@@ -413,15 +413,14 @@ function SQLRepl({ db }) {
             showExpandAll={true}
         />
       </pre>
-      <pre>Using the selected filters, we keep <b> {kept_xai} xAI tool(s) out of {total_explainers}</b> and <b>{kept_tests} Unit-test(s) out of {total_eligible_points}</b>.   </pre>
+      <pre>Using the selected filters, we keep <b> {kept_xai} xAI tool(s) out of {total_explainers}</b> and <b>{kept_tests} unit test(s) out of {total_eligible_points}</b>.   </pre>
       <pre className="error">{(too_much_filters || "").toString()}</pre>
-      <pre>Below, we test every xAI on these {kept_tests} unit-test(s). Every unit-test evaluate a specific aspect of the xAI algorithm (the <b>fidelity</b> of the explanation to the AI behavior, the <b>stability</b> xAi against minor change in the AI, etc.). <a href="test/index.html">Learn more about implemented unit-tests and how the selection was done.</a></pre>
+      <pre>Below, we test every xAI on these {kept_tests} unit test(s). Every unit test evaluates a specific aspect of the xAI algorithm (the <b>fidelity</b> of the explanation to the AI behavior, the <b>stability</b> xAi against minor changes in the AI, etc.). <a href="test/index.html">Learn more about implemented unit tests and how the selection was done.</a></pre>
 
       <h1 id='Overview_Plot' >2. Evaluate selected xAI using an intuitive scoring method:</h1>
-      <pre>The bubble plot below summarizes the average performance of the selected xAI(s): time on x-axis v.s. score in percentage on y-axis.<br/>
-A perfect xAI should obtain a score of 100% and finish all {kept_tests} tests in the smallest amount of time. Therefore, it would be located on top right.<br/>
-Moreover, some xAI might break while running, because of algorithmic/implementation issues. The dot size represent the number of tests completed without failiure. Thus, a higher portability is described with a bigger dot. 
-<a href={arxiv} target="_blank">Learn more about the overview plot.</a>
+      <pre>The bubble plot below summarizes the average performance of the selected xAI(s): time on x-axis v.s. score in percentage on the y-axis.<br/>
+A perfect xAI should obtain a score of 100% and finish all {kept_tests} tests in the smallest amount of time. Therefore, it would be located on the top right.<br/>
+Moreover, some xAI might break while running, because of algorithmic/implementation issues. The dot size represents the number of tests completed without failure. Thus, higher portability is described with a bigger dot. <a href={arxiv} target="_blank">Learn more about the overview plot.</a>
 </pre>
       <Plot
         data={data}
@@ -431,8 +430,8 @@ Moreover, some xAI might break while running, because of algorithmic/implementat
         onUnhover={data => document.getElementsByClassName('nsewdrag')[0].style.cursor = ''}
         divId={'fig'}
       />
-      <pre> An xAI can obtain a good average score but it might completly fail in a specific category of tests. <b>Table 1</b> contains a more detailed scoring method by subdividing the score into {categories.length} categories:<br/>
-      <b>Fidelity</b>:     Test if the xAI output reflect the underlying model.<br/>
+      <pre> An xAI can obtain a good average score but it might completely fail in a specific category of tests. <b>Table 1</b> contains a more detailed scoring method by subdividing the score into {categories.length} categories:<br/>
+      <b>Fidelity</b>:     Test if the xAI output reflects the underlying model.<br/>
       <b>Fragility</b>:    Test if the xAI output is easily manipulable on purpose.<br/>
       <b>Stability</b>:    Test if the xAI output is too sensitive to slight changes in the dataset/model.<br/>
       <b>Simplicity</b>:   Users should be able to look at the explanation, and reason about model behavior.<br/>
@@ -446,6 +445,7 @@ Moreover, some xAI might break while running, because of algorithmic/implementat
           <pre className="fig_title"><b>Table 1:</b> Subscores given the selected filters.</pre>
           <ResultsTable columns={results[0].columns.map( x => sql_to_nice_name[x])} values={results[0].values} />
       </pre>
+      <pre>Subscores change with the selected list of tests. Unselect all filters to have a global evaluation of the xAI or select the appropriate ones to obtain an evaluation of the use case of your need.</pre> 
       <pre></pre> {/* just need some spacing */}
       <h1 id='Explainer_details' >3. {selected_explainer} Explainer: Details</h1>
       <pre>Select one specific Explainer by clicking on a blue dot in Figure 1. Below you can find a helpful description of the explainer and its specific requirements.</pre> 
@@ -466,8 +466,8 @@ Moreover, some xAI might break while running, because of algorithmic/implementat
 
       <h1 id='Explainer_limits' >4. {selected_explainer} Explainer: Limits of the interpretability of its output</h1>
       <pre><b>Table 2</b> gives the most detailed scoring. Here you will learn when exactly {selected_explainer} fails in explaining a model. 
-The table is sorted by score (increasing) so you just need to look at the few fist tests with a score below 80%. 
-Want to learn how to deal with the limitations of the {selected_explainer} explainer? <a href="https://github.com/Karim-53/Compare-xAI/blob/main/data/01_raw/test.csv" target="_blank">See the workaround solution for each test here !</a>
+The table is sorted by score (increasing) so you just need to look at the few first tests with a score below 80%. 
+Want to learn how to deal with the limitations of the {selected_explainer} explainer? <a href="https://github.com/Karim-53/Compare-xAI/blob/main/data/01_raw/test.csv" target="_blank">See the workaround solution for each test here!</a>
 </pre>
       <pre>
         <pre className="fig_title"><b>Table 2:</b> Score obtained by <b>{selected_explainer} explainer</b> for each test.</pre>
