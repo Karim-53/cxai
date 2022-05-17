@@ -306,6 +306,13 @@ function SQLRepl({ db }) {
   const layout = {
     width: 900,
     height: 580,
+    margin: {
+      // l: 50,
+      // r: 50,
+      // b: 100,
+      t: 40,
+      pad: 0
+    },
     xaxis: {
       // range: [ 0.75, 5.25 ],
       type: 'log',
@@ -346,9 +353,9 @@ function SQLRepl({ db }) {
       }
     ],
 
-    title:{
-      text:"<b>Figure 1</b>: Global overview of the explainers' performance.<br><b>Tip</b>: Click on an explainer for more details.",
-    }
+    // title:{
+    //   text:"<b>Figure 1</b>: Global overview of the explainers' performance.<br><b>Tip</b>: Click on an explainer for more details.",
+    // }
   };  // todo [after acceptance] autosize: true, https://dev.to/dheerajmurali/building-a-responsive-chart-in-react-with-plotly-js-4on8
 
   const explainer_df = results[1]
@@ -373,7 +380,7 @@ function SQLRepl({ db }) {
   const explainer_layout = {
     // height:280,
     height:320,
-    title: '<b>Figure 2</b>: Score of <i>'+ selected_explainer +' Explainer</i> per category.',
+    // title: '<b>Figure 2</b>: Score of <i>'+ selected_explainer +' Explainer</i> per category.',
     font:{
       family: 'Raleway, sans-serif'
     },
@@ -467,6 +474,8 @@ Moreover, some xAI might break while running, because of algorithmic/implementat
         layout={explainer_layout}
         divId={'explainer_fig'}
       />
+      <pre className="fig_title"><b>Figure 2</b>: Score of <b>{selected_explainer} Explainer</b> per category.</pre>
+
 
       <h2 id='Explainer_limits' class="content-subhead" >4. {selected_explainer} Explainer: Limits of the interpretability of its output</h2>
       <pre><b>Table 2</b> gives the most detailed scoring. Here you will learn when exactly {selected_explainer} fails in explaining a model. 
