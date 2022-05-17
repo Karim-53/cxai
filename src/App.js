@@ -13,7 +13,8 @@ import jump from "./jump.js";
 const nodes = [
 {
   value: 'main_checklist',
-  label: 'Filter:',
+  label: 'Filters:',
+  showCheckbox: false,
   children: [
 { // todo include all of them in one big node "Filter:"
   value: 'supported_model_checklist',
@@ -85,7 +86,7 @@ const categories = ['fidelity', 'fragility', 'stability', 'simplicity', 'stress'
 const pecentage_per_category = categories.map(category => ' ROUND(AVG(case category when \''+category+'\' then score end)*100.0,1) AS percentage_'+category).join(',\n ');
 const sql_to_nice_name = {'explainer':'Explainer',
   'time_per_test':'Average time per test',
-  'eligible_points':'Number of compleated tests',
+  'eligible_points':'Number of completed tests',
   'percentage_fidelity':'Fidelity [%]',
   'percentage_fragility':'Fragility [%]',
   'percentage_stability':'Stability [%]',
@@ -189,7 +190,7 @@ return r
 function SQLRepl({ db }) {
   const [selected_explainer, setExplainer] = useState('kernel_shap');
   const [checked, setChecked] = useState(['output_importance']);
-  const [expanded, setExpanded] = useState([]);
+  const [expanded, setExpanded] = useState(['main_checklist']);
   const [results, setResults] = useState(db.exec(sql(selected_explainer, checked)));
   const [error, setError] = useState(null);
   
@@ -216,7 +217,7 @@ function SQLRepl({ db }) {
   
     setExplainer(explainer)
     try {
-      jump('Explainer_limits')
+      jump('Explainer_details')
     } catch (error) {
       console.error(error);
     }
@@ -416,13 +417,9 @@ function SQLRepl({ db }) {
       </pre>
       <pre>Using the selected filters, we keep <b> {kept_xai} xAI tool(s) out of {total_explainers}</b> and <b>{kept_tests} unit test(s) out of {total_eligible_points}</b>.   </pre>
       <pre className="error">{(too_much_filters || "").toString()}</pre>
-      <pre>Below, we test every xAI on these {kept_tests} unit test(s). Every unit test evaluates a specific aspect of the xAI algorithm (the <b>fidelity</b> of the explanation to the AI behavior, the <b>stability</b> xAi against minor changes in the AI, etc.). <a href={arxiv}>Learn more about implemented unit tests and how the selection was done.</a></pre>
+      <pre>Below, we test every xAI on these {kept_tests} unit test(s). Every unit test evaluates a specific aspect of the xAI algorithm (the <b>fidelity</b> of the explanation to the AI behavior, the <b>stability</b> of the xAI against minor changes in the AI, etc.). <a href={arxiv}>Learn more about implemented unit tests and how the selection was done.</a></pre>
 
       <h2 id='Overview_Plot'  class="content-subhead" >2. Evaluate selected xAI using an intuitive scoring method:</h2>
-      <pre>The bubble plot below summarizes the average performance of the selected xAI(s): time on x-axis v.s. score in percentage on the y-axis.<br/>
-A perfect xAI should obtain a score of 100% and finish all {kept_tests} tests in the smallest amount of time. Therefore, it would be located on the top right.<br/>
-Moreover, some xAI might break while running, because of algorithmic/implementation issues. The dot size represents the number of tests completed without failure. Thus, higher portability is described with a bigger dot. <a href={arxiv} target="_blank">Learn more about the overview plot.</a>
-</pre>
       <Plot
         data={data}
         layout={layout}
@@ -431,6 +428,12 @@ Moreover, some xAI might break while running, because of algorithmic/implementat
         onUnhover={data => document.getElementsByClassName('nsewdrag')[0].style.cursor = ''}
         divId={'fig'}
       />
+      
+      <pre className="fig_title"><b>Figure 1:</b>: Global overview of the explainers' performance.<br/><b>Tip</b>: Click on an explainer for more details.</pre>
+      <pre>The bubble plot (<b>Figure 1</b>) summarizes the average performance of the selected xAI(s): time on x-axis v.s. score in percentage on the y-axis.
+A perfect xAI should obtain a score of 100% and finish all {kept_tests} tests in the smallest amount of time. Therefore, it would be located on the top right.<br/>
+Moreover, some xAI might break while running, because of algorithmic/implementation issues. The dot size represents the number of tests completed without failure. Thus, higher portability is described with a bigger dot. <a href={arxiv} target="_blank">Learn more about the overview plot.</a>
+</pre>
       <pre> An xAI can obtain a good average score but it might completely fail in a specific category of tests. <b>Table 1</b> contains a more detailed scoring method by subdividing the score into {categories.length} categories:<br/>
       <b>Fidelity</b>:     Test if the xAI output reflects the underlying model.<br/>
       <b>Fragility</b>:    Test if the xAI output is easily manipulable on purpose.<br/>
