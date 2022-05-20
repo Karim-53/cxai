@@ -1,4 +1,5 @@
 // some sql.js op https://phiresky.github.io/blog/2021/hosting-sqlite-databases-on-github-pages/
+// todo https://wordpress.org/ for the template
 import React, { useState, useEffect } from "react";
 import "./styles.css";
 import initSqlJs from "sql.js"; // https://sql.js.org/#%2F=     test env https://sql.js.org/examples/GUI/index.html
@@ -11,7 +12,7 @@ import "react-checkbox-tree/lib/react-checkbox-tree.css";  // https://github.com
 // import DataTable from 'react-data-table-component'; todo [after acceptance] https://datatables.net/
 import jump from "./jump.js";
 const nodes = [
-{
+{   
   value: 'main_checklist',
   label: 'Filters:',
   showCheckbox: false,
@@ -425,7 +426,7 @@ function SQLRepl({ db }) {
       <pre>Using the selected filters, we keep <b> {kept_xai} xAI tool(s) out of {total_explainers}</b> and <b>{kept_tests} unit test(s) out of {total_eligible_points}</b>.   </pre>
       <pre className="error">{(too_much_filters || "").toString()}</pre>
       <pre>Below, we test every xAI on these {kept_tests} unit test(s). Every unit test evaluates a specific aspect of the xAI algorithm (the <b>fidelity</b> of the explanation to the AI behavior, the <b>stability</b> of the xAI against minor changes in the AI, etc.). <a href={arxiv}>Learn more about implemented unit tests and how the selection was done.</a></pre>
-
+      {/* maybe I should let him hold the text to make the plot closer to the filters https://codepen.io/BravoTwo/pen/JjopqaN https://www.w3schools.com/howto/howto_js_collapsible.asp */}
       <h2 id='Overview_Plot'  class="content-subhead" >2. Evaluate selected xAI using an intuitive scoring method:</h2>
       <Plot
         data={data}
