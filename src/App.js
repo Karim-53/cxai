@@ -84,6 +84,12 @@ function average(data) {
 // if (window.location.href.includes("localhost")) { console.log('localhost');}
 
 const categories = ['fidelity', 'fragility', 'stability', 'simplicity', 'stress']  // todo get it from db
+const category_definition = {'fidelity':     'Test if the xAI output reflects the underlying model.',
+      'fragility':'Test if the xAI output is easily manipulable on purpose.',
+      'stability':'Test if the xAI output is too sensitive to slight changes in the dataset/model.',
+      'simplicity':   'Users should be able to look at the explanation, and reason about model behavior.',
+      'stress': 'Test if the xAI can explain models trained on big data.'}
+
 const pecentage_per_category = categories.map(category => ' ROUND(AVG(case category when \''+category+'\' then score end)*100.0,1) AS percentage_'+category).join(',\n ');
 const sql_to_nice_name = {'explainer':'Explainer',
   'time_per_test':'Average time per test',
@@ -372,9 +378,13 @@ function SQLRepl({ db }) {
   
   const explainer_scores = [{
     type: 'bar',
-    x: explainer_cat_scores.reverse(), // todo handel nan values
-    y: categories.reverse(),
-    text: explainer_cat_scores,
+    x: explainer_cat_scores.slice().reverse(), // todo handel nan values
+    y: categories.slice().reverse(),
+    text: explainer_cat_scores.slice().reverse(),
+    hovertext: categories.slice().reverse().map( x => category_definition[x]),
+    hovertemplate: '<b>Sub-category</b>: %{y}' +
+                        '<br><b>Sub-score</b>: %{x:.2f}<br>' +
+                        '<b>Sub-category definition</b>:%{hovertext}</b><extra></extra>',
     orientation: 'h',
   }];
 
@@ -389,6 +399,7 @@ function SQLRepl({ db }) {
     xaxis: {
       tickangle: -45,
       range: [1, 100],
+
       title: {
         text: 'Score [%] ↑'
       }
@@ -409,7 +420,7 @@ function SQLRepl({ db }) {
     // todo add fork me on github
     <div className="App">
       <pre className="error">{(error || "").toString()}</pre>
-      <h2 id='Filters' class="content-subhead"  >1. shortlist xAI that fits your needs:</h2>
+      <h2 id='Filters' className="content-subhead"  >1. shortlist xAI that fits your needs:</h2>
       <pre>Use the filters below to describe the xAI model and the dataset you would like to explain.</pre>
       {/* <a href="filters.html">Click here to learn more about each constraint.</a> */}
 
@@ -427,7 +438,7 @@ function SQLRepl({ db }) {
       <pre className="error">{(too_much_filters || "").toString()}</pre>
       <pre>Below, we test every xAI on these {kept_tests} unit test(s). Every unit test evaluates a specific aspect of the xAI algorithm (the <b>fidelity</b> of the explanation to the AI behavior, the <b>stability</b> of the xAI against minor changes in the AI, etc.). <a href={arxiv}>Learn more about implemented unit tests and how the selection was done.</a></pre>
       {/* maybe I should let him hold the text to make the plot closer to the filters https://codepen.io/BravoTwo/pen/JjopqaN https://www.w3schools.com/howto/howto_js_collapsible.asp */}
-      <h2 id='Overview_Plot'  class="content-subhead" >2. Evaluate selected xAI using an intuitive scoring method:</h2>
+      <h2 id='Overview_Plot'  className="content-subhead" >2. Evaluate selected xAI using an intuitive scoring method:</h2>
       <Plot
         data={data}
         layout={layout}
@@ -443,11 +454,11 @@ A perfect xAI should obtain a score of 100% and finish all {kept_tests} tests in
 Moreover, some xAI might break while running, because of algorithmic/implementation issues. The dot size represents the number of tests completed without failure. Thus, higher portability is described with a bigger dot. <a href={arxiv} target="_blank">Learn more about the overview plot.</a>
 </pre>
       <pre> An xAI can obtain a good average score but it might completely fail in a specific category of tests. <b>Table 1</b> contains a more detailed scoring method by subdividing the score into {categories.length} categories:<br/>
-      <b>Fidelity</b>:     Test if the xAI output reflects the underlying model.<br/>
-      <b>Fragility</b>:    Test if the xAI output is easily manipulable on purpose.<br/>
-      <b>Stability</b>:    Test if the xAI output is too sensitive to slight changes in the dataset/model.<br/>
-      <b>Simplicity</b>:   Users should be able to look at the explanation, and reason about model behavior.<br/>
-      <b>Stress tests</b>: Test if the xAI can explain models trained on big data.<br/>
+      <b>Fidelity</b>:     {category_definition['fidelity']}<br/>
+      <b>Fragility</b>:     {category_definition['fragility']}<br/>
+      <b>Stability</b>:     {category_definition['stability']}<br/>
+      <b>Simplicity</b>:     {category_definition['simplicity']}<br/>
+      <b>Stress tests</b>:     {category_definition['stress']}<br/>
       <a href={arxiv} target="_blank">See our paper for more details.</a>
       </pre>
 
@@ -459,7 +470,7 @@ Moreover, some xAI might break while running, because of algorithmic/implementat
       </pre>
       <pre>Subscores change with the selected list of tests. Unselect all filters to have a global evaluation of the xAI or select the appropriate ones to obtain an evaluation of the use case of your need.</pre> 
       <pre></pre> {/* just need some spacing */}
-      <h2 id='Explainer_details'  class="content-subhead" >3. {selected_explainer} Explainer: Details</h2>
+      <h2 id='Explainer_details'  className="content-subhead" >3. {selected_explainer} Explainer: Details</h2>
       <pre>Select one specific Explainer by clicking on a blue dot in Figure 1. Below you can find a helpful description of the explainer and its specific requirements.</pre> 
       <div>
         {/* <pre id="description"><b>Description:</b> {explainer_description}</pre> */
@@ -478,7 +489,7 @@ Moreover, some xAI might break while running, because of algorithmic/implementat
       <pre className="fig_title"><b>Figure 2</b>: Score of <b>{selected_explainer} Explainer</b> per category.</pre>
 
 
-      <h2 id='Explainer_limits' class="content-subhead" >4. {selected_explainer} Explainer: Limits of the interpretability of its output</h2>
+      <h2 id='Explainer_limits' className="content-subhead" >4. {selected_explainer} Explainer: Limits of the interpretability of its output</h2>
       <pre><b>Table 2</b> gives the most detailed scoring. Here you will learn when exactly {selected_explainer} fails in explaining a model. 
 The table is sorted by score (increasing) so you just need to look at the few first tests with a score below 80%. 
 Want to learn how to deal with the limitations of the {selected_explainer} explainer? <a href="https://github.com/Karim-53/Compare-xAI/blob/main/data/01_raw/test.csv" target="_blank">See the workaround solution for each test here!</a>
