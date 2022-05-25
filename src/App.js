@@ -142,9 +142,10 @@ function sql(explainer, checked){
   var where = checked.filter(checkbox_id => checkbox_id in node_sql).map( x => node_sql[x]).join(' AND ')
   if (where.length > 0) where = 'Where ' + where + ' \n'
   const r = `
-  --0 For Plotly
-  SELECT	c.explainer,
-ROUND(AVG(c.time),2) AS time_per_test,
+--0 For Plotly
+SELECT	c.explainer,
+--ROUND(AVG(c.time),2) AS time_per_test,
+xai.time_per_test as time_per_test,
 count(c.score) AS eligible_points,
 ` + pecentage_per_category + ` 
 FROM cross_tab AS c
