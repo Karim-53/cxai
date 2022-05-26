@@ -51,7 +51,7 @@ const nodes = [
       // { value: 'required_input_train_function', label: '#Future work: Retrain the model.', disabled:true },
   ]
 },
-{ value: 'test_adversarial_attacks', label: 'I trust the xAI output (I created the data and the model myself)', sql: "t.category != 'fragility'"}
+{ value: 'test_adversarial_attacks', label: 'I trust the xAI\'s output (I created the data and the model myself)', sql: "t.category != 'fragility'"}
 // { value: 'assumptions_data_distribution_iid', label: '#Future work: Assume input features to be independent and identically distributed', disabled:true },
 // { value: 'explainer_need_gpu', label: '#Future work: Constraint on hardware equipement: xAI alg. require a GPU.', disabled:true }
 // {
@@ -84,11 +84,11 @@ function average(data) {
 // if (window.location.href.includes("localhost")) { console.log('localhost');}
 
 const categories = ['fidelity', 'fragility', 'stability', 'simplicity', 'stress']  // todo get it from db
-const category_definition = {'fidelity':     'Test if the xAI output reflects the underlying model.',
+const category_definition = {'fidelity':     'Test if the xAI\' output reflects the underlying model.',
       'fragility':'Test if the xAI output is easily manipulable on purpose.',
       'stability':'Test if the xAI output is too sensitive to slight changes in the dataset/model.',
       'simplicity':   'Users should be able to look at the explanation, and reason about model behavior.',
-      'stress': 'Test if the xAI can explain models trained on big data.'}
+      'stress': 'Test whether the xAI can explain models trained on big data.'}
 
 const pecentage_per_category = categories.map(category => ' ROUND(AVG(case category when \''+category+'\' then score end)*100.0,1) AS percentage_'+category).join(',\n ');
 const sql_to_nice_name = {'explainer':'Explainer',
@@ -263,7 +263,8 @@ function SQLRepl({ db }) {
     type: 'scatter',
     name: 'Explainers',
     text: text, // hover https://plotly.com/javascript/reference/
-    textposition: 'top center',
+    textposition: time_per_test.map( (x,idx) => idx % 2 === 0  ? 'top center': 'bottom center'),
+    cliponaxis:false,
     textfont: {
       family:  'Raleway, sans-serif'
     },
@@ -447,6 +448,7 @@ function SQLRepl({ db }) {
         onHover={data => document.getElementsByClassName('nsewdrag')[0].style.cursor = 'pointer'}
         onUnhover={data => document.getElementsByClassName('nsewdrag')[0].style.cursor = ''}
         divId={'fig'}
+        responsive={true}
       />
       
       <pre className="fig_title"><b>Figure 1:</b>: Global overview of the explainers' performance.<br/><b>Tip</b>: Click on an explainer for more details.</pre>
@@ -485,6 +487,7 @@ Moreover, some xAI might break while running, because of algorithmic/implementat
       <Plot
         data={explainer_scores}
         layout={explainer_layout}
+        responsive={true}
         divId={'explainer_fig'}
       />
       <pre className="fig_title"><b>Figure 2</b>: Score of <b>{selected_explainer} Explainer</b> per category.</pre>
