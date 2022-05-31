@@ -28,7 +28,7 @@ const nodes = [
 },
 {
   value: 'required_output_checklist',
-  label: 'I need specific output(s) from the XAI:',
+  label: 'I need specific output(s) from the xAI:',
   children: [
       { value: 'output_importance', label: 'Feature importance (Global Explanation)', sql:'xai.output_importance = 1'},
       { value: 'output_attribution', label: 'Feature attribution (Local Explanation)', sql:'xai.output_attribution = 1' }, // We discuss the attribution problem, i.e., the problem of distributing the prediction score of a model for a specific input to its base features (cf. [15, 10, 19]); the attribution to a base feature can be interpreted as the importance of the feature to the prediction. https://arxiv.org/pdf/1908.08474.pdf
@@ -124,7 +124,7 @@ export default function App() {
   }, []);
 
   if (error) return <pre>{error.toString()}</pre>;
-  else if (!db) return <pre>Loading...</pre>;
+  else if (!db) return <pre>Crunching the latest data, just for you. Hang tight…</pre>;
   else return <SQLRepl db={db} />;
 }
 
@@ -278,25 +278,6 @@ function SQLRepl({ db }) {
   };
 
 
-  // const trace1_legend = {
-  //   x: time_per_test,
-  //   y: percentage,
-  //   mode: 'markers+text',
-  //   type: 'scatter',
-  //   text: text, // hover https://plotly.com/javascript/reference/
-  //   textposition: 'top center',
-  //   textfont: {
-  //     family:  'Raleway, sans-serif'
-  //   },
-  //   marker: { size: eligible_points.map(x => 2*x) },
-
-
-
-  //   legendgroup: "size",
-  //   visible:"legendonly",
-  //   name: 'Portability: completed tests without failiure',
-  // }
-
   const trace2 = {
     x: pareto_time_per_test,
     y: pareto_percentage,
@@ -313,50 +294,55 @@ function SQLRepl({ db }) {
   const data = [ trace1, trace2 ];
 
   const layout = {
-    width: 900,
+    width: 800,
     height: 580,
     margin: {
-      // l: 50,
-      // r: 50,
-      // b: 100,
-      t: 40,
+      l: 55,
+      r: 0,
+      b: 35,
+      t: 35,
       pad: 0
     },
+    family: 'roboto', // not sure it works
     xaxis: {
-      // range: [ 0.75, 5.25 ],
+      range: [ -2.8, 3.5 ],
       type: 'log',
-      autorange: true,
+      // autorange: true,
       title: {
-        text: 'Fast alg. <--     Average Time per test [Seconds] ↓     --> Slow alg.'
+        text: 'Fast alg. <--     Average time per test [Seconds] ↓     --> Slow alg.'
       }
     },
     yaxis: {
-      range: [1, 100],
+      range: [20, 100],
       title: {
-        text: 'Poor <--  Average Score per test [%] ↑  --> Excelent'
+        text: 'Comprehensibility score<br>Poor <--   Average performance per test [%] ↑  --> Excellent'
       }
     },
     legend: {
       "tracegroupgap": 20,
-      y: 1,
+      color: '#999',
+      x:1,
+      y: 0,
+      xanchor: 'right',
+      // xref: 'paper',
       yref: 'paper',
       font: {
-        family: 'Arial, sans-serif',
+        family: 'roboto, Arial, sans-serif',
         // size: 20,
         // color: 'grey',
       },
     },
     annotations: [
       {
-        x: 0.01,
+        x: 0.02,
         y: 100,
         xref: 'paper',
         yref: 'y',
-        text: 'Best xAI(s) are close to this point',
+        text: 'Best xAI(s) are close to this point.',
         showarrow: true,
         arrowhead: 7,
-        ax: 15 ,
-        ay: -35,
+        ax: 40,
+        ay: -30,
         font: {color:'#636363'},
         arrowcolor:'#636363',
       }
