@@ -403,7 +403,7 @@ function SQLRepl({ db }) {
   };
 
   const too_much_filters = (kept_xai<=1) ? "None of the indexed xAI satisfy the selected constrains. Please use less filters." : ""
-  const arxiv = 'https://karim-53.github.io/cxai/Compare_xAI_NeurIPS_2022_preprint.pdf' // todo 
+  const arxiv = 'https://github.com/Karim-53/Compare-xAI/blob/main/docs/Compare_xAI_NeurIPS_2022_preprint.pdf' // todo 
   return (
     // todo add fork me on github
     <div className="App">
