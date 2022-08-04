@@ -92,7 +92,7 @@ const category_definition = {'fidelity':     'Test if the xAI\' output reflects 
 
 const pecentage_per_category = categories.map(category => ' ROUND(AVG(case category when \''+category+'\' then score end)*100.0,1) AS percentage_'+category).join(',\n ');
 const sql_to_nice_name = {'explainer':'Explainer',
-  'time_per_test':'Average time per test',
+  'time_per_test':'Average time per test [second]',
   'eligible_points':'Number of completed tests',
   'percentage_fidelity':'Fidelity [%]',
   'percentage_fragility':'Fragility [%]',
@@ -176,7 +176,7 @@ Where (explainer = '`+explainer+`') and (score IS NOT NULL)
 Order By Score;
 -- order also by 'test category' test_subtest, 'Tested_xAI_output________';
 
---3 Kept Unit tests
+--3 Kept tests
 SELECT	count(DISTINCT c.test_subtest) AS kept_tests
 FROM cross_tab AS c
 Left JOIN test AS t ON c.test = t.test
@@ -359,7 +359,7 @@ function SQLRepl({ db }) {
 
 
   const explainer_cat_scores = (explainer_row.length > 0) ? categories.map(c => explainer_row[0][column['percentage_' + c]]) : categories.map(c => null)
-  const explainer_error = (explainer_row.length > 0) ? '' : `With the applied filters, none of remaining unit tests could be applied on this explainer,
+  const explainer_error = (explainer_row.length > 0) ? '' : `With the applied filters, none of remaining tests could be applied on this explainer,
   please select another one by clicking on a blue dot in the first figure.`
   // console.log(df.columns)
   // console.log(explainer_row)
@@ -408,7 +408,7 @@ function SQLRepl({ db }) {
     // todo add fork me on github
     <div className="App">
       <pre className="error">{(error || "").toString()}</pre>
-      <h2 id='Filters' className="content-subhead"  >1. shortlist xAI that fits your needs:</h2>
+      <h2 id='Filters' className="content-subhead"  >1. Shortlist xAI that fits your needs:</h2>
       <pre>Use the filters below to describe the xAI model and the dataset you would like to explain.</pre>
       {/* <a href="filters.html">Click here to learn more about each constraint.</a> */}
 
@@ -422,9 +422,9 @@ function SQLRepl({ db }) {
             showExpandAll={true}
         />
       </pre>
-      <pre>Using the selected filters, we keep <b> {kept_xai} xAI tool(s) out of {total_explainers}</b> and <b>{kept_tests} unit test(s) out of {total_eligible_points}</b>.   </pre>
+      <pre>Using the selected filters, we keep <b> {kept_xai} xAI tool(s) out of {total_explainers}</b> and <b>{kept_tests} test(s) out of {total_eligible_points}</b>.   </pre>
       <pre className="error">{(too_much_filters || "").toString()}</pre>
-      <pre>Below, we test every xAI on these {kept_tests} unit test(s). Every unit test evaluates a specific aspect of the xAI algorithm (the <b>fidelity</b> of the explanation to the AI behavior, the <b>stability</b> of the xAI against minor changes in the AI, etc.). <a href={arxiv}>Learn more about implemented unit tests and how the selection was done.</a></pre>
+      <pre>Below, we test every xAI on these {kept_tests} test(s). Every test evaluates a specific aspect of the xAI algorithm (the <b>fidelity</b> of the explanation to the AI behavior, the <b>stability</b> of the xAI against minor changes in the AI, etc.). <a href={arxiv}>Learn more about implemented tests and how the selection was done.</a></pre>
       {/* maybe I should let him hold the text to make the plot closer to the filters https://codepen.io/BravoTwo/pen/JjopqaN https://www.w3schools.com/howto/howto_js_collapsible.asp */}
       <h2 id='Overview_Plot'  className="content-subhead" >2. Evaluate selected xAI using an intuitive scoring method:</h2>
       <Plot

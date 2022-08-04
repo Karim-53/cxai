@@ -34,6 +34,115 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
 	<title>Compare-xAI: Overview</title>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      "name": "How to compare explainable AI algorithms (xAI)",
+      "totalTime": "PT5M",
+      "image": {
+        "@type": "ImageObject",
+        "url": "https://karim-53.github.io/cxai/rich_result/benchmark_restricted.png",
+        "height": "846",
+        "width": "793"
+      },
+      "supply": [
+        {
+          "@type": "HowToSupply",
+          "name": "benchmark"
+        }, {
+          "@type": "HowToSupply",
+          "name": "evaluate"
+        }, {
+          "@type": "HowToSupply",
+          "name": "test"
+        }, {
+          "@type": "HowToSupply",
+          "name": "assess"
+        }
+      ],
+      "step": [
+        {
+          "@type": "HowToStep",
+          "url": "https://karim-53.github.io/cxai/#Filters",
+          "name": "Shortlist xAI(s) that fits your needs using the following checklist",
+          "itemListElement": [{
+            "@type": "HowToDirection",
+            "text": "Select the checkboxes describing your use case (AI model, dataset structure, etc.)."
+          }, {
+            "@type": "HowToDirection",
+            "text": "Make sure to not eliminate all xAI algorithms by selecting too much requirements."
+          }],
+          "image": {
+            "@type": "ImageObject",
+            "url": "https://karim-53.github.io/cxai/rich_result/filters.png",
+            "height": "254",
+            "width": "755"
+          }
+        }, {
+          "@type": "HowToStep",
+          "name": "Evaluate selected xAI using an intuitive scoring method",
+          "url": "https://karim-53.github.io/cxai/#Overview_Plot",
+          "itemListElement": [{
+            "@type": "HowToTip",
+            "text": "A perfect xAI should obtain a score of 100% and finish all tests in the smallest amount of time. Therefore, it would be located on the top right."
+          }, {
+            "@type": "HowToDirection",
+            "text": "Read the skyline of xAI with the highest performance."
+          }, {
+            "@type": "HowToDirection",
+            "text": "choose between the fastest algorithm or the most “comprehensible” one from the skyline by clicking on the dot."
+          }],
+          "image": {
+            "@type": "ImageObject",
+            "url": "https://karim-53.github.io/cxai/rich_result/benchmark.png",
+            "height": "580",
+            "width": "800"
+          }
+        }, {
+          "@type": "HowToStep",
+          "name": "Read about the selected xAI algorithm",
+          "url": "https://karim-53.github.io/cxai/#Explainer_details",
+          "itemListElement": [{
+            "@type": "HowToDirection",
+            "text": "Learn about its main implementation concept and usecases."
+          }, {
+            "@type": "HowToDirection",
+            "text": "Learn about its portability (supported models, xAI outputs, required data)."
+          }, {
+            "@type": "HowToDirection",
+            "text": "Learn about its origin (source paper and source code)."
+          }],
+          "image": {
+            "@type": "ImageObject",
+            "url": "https://karim-53.github.io/cxai/rich_result/details.png",
+            "height": "320",
+            "width": "700"
+          }
+        }, {
+          "@type": "HowToStep",
+          "name": "Check the detailed limitations of the interpretability of its output",
+          "url": "https://karim-53.github.io/cxai/#Explainer_limits",
+          "itemListElement": [{
+            "@type": "HowToDirection",
+            "text": "Identify the tests that the xAI is failing."
+          }, {
+            "@type": "HowToDirection",
+            "text": "Shortlist the relevant ones."
+          }, {
+            "@type": "HowToDirection",
+            "text": "Apply the best practice tips to mitigate these limitations."
+          }],
+          "image": {
+            "@type": "ImageObject",
+            "url": "https://karim-53.github.io/cxai/rich_result/limit.png",
+            "height": "599",
+            "width": "891"
+          }
+        }
+      ]
+    }
+    </script>
 </head>
 
 <body>
