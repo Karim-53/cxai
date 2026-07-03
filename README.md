@@ -1,47 +1,34 @@
-# Install (no admin)
-from https://gkarthiks.medium.com/how-to-install-nodejs-and-npm-in-non-admin-access-windows-machines-102fd461b54c
-download `https://nodejs.org/dist/v16.16.0/win-x64/node.exe`, put it in a fixed place.
-Add to PATH Windows key, edit variable environment for your account
+<h1 align="center">Compare-xAI · Interactive Benchmark 🌐</h1>
 
+<p align="center">
+  <b>The web front-end for <a href="https://github.com/Karim-53/Compare-xAI">Compare-xAI</a> — explore, sort, and filter Explainable-AI benchmark results right in your browser.</b>
+</p>
 
-download `https://registry.npmjs.org/npm/-/npm-8.11.0.tgz`
-In a new cmd:
-```
-cd C:\Inn\Programme\root\package
-node bin/npm-cli.js install npm -gf
+<p align="center">
+  <a href="https://karim-53.github.io/cxai/"><img alt="Live" src="https://img.shields.io/badge/live-demo-brightgreen"></a>
+  <img alt="React" src="https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB">
+  <img alt="sql.js" src="https://img.shields.io/badge/sql.js-WASM-003B57?logo=sqlite&logoColor=white">
+</p>
 
-```
+**➡️ Live app: [karim-53.github.io/cxai](https://karim-53.github.io/cxai/)**
 
-to verify installation
-node v16.16.0
-npm 8.15.0
-```
-node -v
-npm -v
-```
+This is a single-page [React](https://reactjs.org/) application that ships the entire Compare-xAI benchmark database as a WebAssembly SQLite file and queries it **client-side** with [sql.js](https://github.com/sql-js/sql.js) — no backend, no server round-trips. Users can rank explainability methods by comprehensibility, portability, and runtime, and drill into individual test results.
 
-# Init
-```
-cd cxai/
-npm i
-npm i @craco/craco
-npm start
-```
-or
-```
-npm run build
+## 🛠️ Tech highlights
+- ⚛️ **React SPA** — served statically via GitHub Pages.
+- 🗄️ **In-browser SQL** — the benchmark ships as a SQLite DB read directly in the browser with sql.js (WASM).
+- 🧩 **Custom webpack via [craco](https://github.com/gsoft-inc/craco)** — see [`craco.config.js`](./craco.config.js), which copies the sql.js WASM module into the build assets. The application logic lives in [`src/App.js`](./src/App.js).
+
+## 🚀 Run it locally
+Requires Node.js 16.
+
+```bash
+npm install
+npm start        # dev server at http://localhost:3000
+npm run build    # production build
 ```
 
-# Side notes
+## 🔗 Related
+- **[Compare-xAI](https://github.com/Karim-53/Compare-xAI)** — the benchmark itself, the experiments, and the paper (arXiv:2207.14160).
 
-see https://github.com/sql-js/react-sqljs-demo/issues/9
-
-
-#demonstration of [react](https://reactjs.org/) + [sql.js](https://github.com/sql-js/sql.js)
-
-
-The only differences with a traditional create-react-app application are :
- - The usage of [craco](https://github.com/gsoft-inc/craco) to allow providing a custom [webpack](https://webpack.js.org/) configuration
- - a small custom webpack configuration in [`craco.config.js`](./craco.config.js) to copy the wasm module from sql.js to the distributed assets
-
- See [`src/App.js`](./src/App.js) for the code.
+_Reference: the sql.js + React integration follows the [react-sqljs-demo](https://github.com/sql-js/react-sqljs-demo)._
