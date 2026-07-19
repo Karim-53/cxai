@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://karim-53.github.io/cxai/</loc>
+    <lastmod>2026-07-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://karim-53.github.io/cxai/rich_result/benchmark.png</image:loc>
+      <image:caption>Scatter plot comparing explainable-AI algorithms by comprehensibility score and runtime</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://karim-53.github.io/cxai/rich_result/filters.png</image:loc>
+      <image:caption>Filter checklist to shortlist xAI algorithms by use case</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://karim-53.github.io/cxai/rich_result/details.png</image:loc>
+      <image:caption>Details of a selected xAI algorithm: description, supported models, outputs</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://karim-53.github.io/cxai/rich_result/limit.png</image:loc>
+      <image:caption>Per-test scores showing the limits of a selected xAI algorithm</image:caption>
+    </image:image>
+  </url>
+</urlset>

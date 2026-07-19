@@ -1,42 +1,296 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
 <head>
-	<meta charset="utf-8">
-	<!-- <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"> -->
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="theme-color" content="#000000">
-	<!--
-      manifest.json provides metadata used when your web app is added to the
-      homescreen on Android. See https://developers.google.com/web/fundamentals/engage-and-retain/web-app-manifest/
-	<link rel="manifest" href="%PUBLIC_URL%/manifest.json">
-    -->
-	<link async rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-  <link async rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
-  <link rel="stylesheet" href="https://unpkg.com/purecss@2.1.0/build/pure-min.css" integrity="sha384-yHIFVG6ClnONEA5yB5DJXfW2/KC173DIQrYoZMEtBvGzmf0PKiGyNEqe9N6BNDBH" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://purecss.io/layouts/side-menu/styles.css"  crossorigin="anonymous">
-  <!-- Global site tag (gtag.js) - Google Analytics -->
-  <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-DQV8VB7FD2"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-DQV8VB7FD2');
-  </script> -->
-	<!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Compare-xAI: Explainable AI Benchmark — Compare SHAP, LIME &amp; 14 More XAI Algorithms</title>
+<meta name="description" content="Open interactive benchmark of 16 explainable-AI (XAI) algorithms — SHAP, LIME, SAGE, MAPLE &amp; more — scored on 22 functional tests: fidelity, fragility, stability, simplicity, stress. Filter by your use case and pick the right explainer.">
+<meta name="keywords" content="explainable AI, XAI, benchmark, SHAP, LIME, feature importance, feature attribution, interpretability, machine learning, model explanation, kernel shap, tree shap, SAGE, MAPLE">
+<meta name="author" content="Mohamed Karim Belaid">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+<meta name="theme-color" content="#4f46e5">
+<link rel="canonical" href="https://karim-53.github.io/cxai/">
+<link rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico">
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-	<title>Compare-xAI: Overview</title>
-  <!-- https://developers.google.com/search/docs/advanced/structured-data/how-to -->
-  <script type="application/ld+json">
-    {
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Compare-xAI">
+<meta property="og:title" content="Compare-xAI: Explainable AI Benchmark — Compare SHAP, LIME &amp; 14 More XAI Algorithms">
+<meta property="og:description" content="Which explainable-AI algorithm can you trust? Interactive benchmark of 16 XAI algorithms scored on 22 functional tests. Filter by your use case and pick the right explainer.">
+<meta property="og:url" content="https://karim-53.github.io/cxai/">
+<meta property="og:image" content="https://karim-53.github.io/cxai/rich_result/benchmark.png">
+<meta property="og:image:width" content="800">
+<meta property="og:image:height" content="580">
+<meta property="og:image:alt" content="Scatter plot comparing explainable-AI algorithms by score and runtime">
+<meta property="og:locale" content="en_US">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Compare-xAI: Explainable AI Benchmark">
+<meta name="twitter:description" content="Interactive benchmark of 16 explainable-AI (XAI) algorithms — SHAP, LIME, SAGE &amp; more — scored on 22 functional tests. Pick the right explainer for your use case.">
+<meta name="twitter:image" content="https://karim-53.github.io/cxai/rich_result/benchmark.png">
+
+<!-- Self-hosted assets only: no third-party CDNs (they broke the site once already). -->
+<link rel="stylesheet" href="%PUBLIC_URL%/vendor/font-awesome/css/font-awesome.min.css">
+
+<style>
+:root{
+  --accent:#4f46e5;
+  --accent-soft:#eef2ff;
+  --accent-2:#7c3aed;
+  --ink:#1e293b;
+  --muted:#64748b;
+  --bg:#f8fafc;
+  --card:#ffffff;
+  --line:#e2e8f0;
+  --sidebar-w:264px;
+  --radius:12px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:16px;line-height:1.65;color:var(--ink);background:var(--bg);
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+.skip-link{position:absolute;left:-9999px;top:0;background:var(--accent);color:#fff;padding:.6rem 1rem;z-index:100;border-radius:0 0 8px 0}
+.skip-link:focus{left:0}
+
+/* ---------- Layout: sidebar + main ---------- */
+#layout{min-height:100vh}
+#menu{
+  position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);z-index:40;
+  background:linear-gradient(180deg,#0f172a 0%,#1e1b4b 100%);
+  color:#cbd5e1;padding:1.6rem 1.1rem;overflow-y:auto;
+  transition:transform .25s ease;
+}
+.brand{display:block;font-size:1.35rem;font-weight:800;letter-spacing:-.02em;color:#fff;margin-bottom:.25rem}
+.brand:hover{text-decoration:none;color:#fff}
+.brand .x{background:linear-gradient(90deg,#818cf8,#c084fc);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand-tag{font-size:.78rem;color:#94a3b8;margin:0 0 1.4rem;line-height:1.45}
+#menu ul{list-style:none;margin:0;padding:0}
+#menu li{margin:.15rem 0}
+#menu ul a{
+  display:block;padding:.5rem .75rem;border-radius:8px;color:#cbd5e1;font-size:.92rem;
+}
+#menu ul a:hover{background:rgba(129,140,248,.15);color:#fff;text-decoration:none}
+#menu ul a.active{background:rgba(129,140,248,.25);color:#fff;font-weight:600}
+.menu-sep{border:0;border-top:1px solid rgba(148,163,184,.25);margin:1rem .25rem}
+.menu-ext{font-size:.85rem}
+.menu-ext .fa{width:1.2em;margin-right:.35em;opacity:.8}
+
+#menuLink{
+  display:none;position:fixed;top:.9rem;left:.9rem;z-index:50;
+  width:44px;height:44px;border:1px solid var(--line);border-radius:10px;
+  background:var(--card);cursor:pointer;box-shadow:0 2px 8px rgba(15,23,42,.08);
+  align-items:center;justify-content:center;
+}
+#menuLink span,#menuLink span::before,#menuLink span::after{
+  content:"";display:block;width:20px;height:2px;background:var(--ink);border-radius:2px;position:relative;margin:0 auto;
+}
+#menuLink span::before{position:absolute;top:-6px}
+#menuLink span::after{position:absolute;top:6px}
+#backdrop{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:30}
+
+#main{margin-left:var(--sidebar-w)}
+.page{max-width:960px;margin:0 auto;padding:0 2rem 3rem}
+
+/* ---------- Hero ---------- */
+.hero{
+  padding:3.2rem 0 2.2rem;border-bottom:1px solid var(--line);
+  background:
+    radial-gradient(600px 300px at 20% 0%,rgba(79,70,229,.08),transparent 70%),
+    radial-gradient(500px 260px at 80% 10%,rgba(124,58,237,.07),transparent 70%);
+}
+.hero-kicker{
+  display:inline-block;font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--accent);background:var(--accent-soft);border:1px solid #c7d2fe;
+  padding:.25rem .7rem;border-radius:999px;margin:0 0 1rem;
+}
+.hero h1{
+  margin:0 0 .4rem;font-size:clamp(2.1rem,5vw,3.2rem);font-weight:800;letter-spacing:-.03em;line-height:1.1;
+}
+.hero h1 .x{background:linear-gradient(90deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-sub{font-size:1.15rem;color:var(--muted);max-width:44rem;margin:.4rem 0 1.4rem}
+.hero-badges{display:flex;flex-wrap:wrap;gap:.6rem}
+.chip{
+  display:inline-flex;align-items:center;gap:.45em;padding:.45rem .95rem;border-radius:999px;
+  font-size:.88rem;font-weight:600;border:1px solid var(--line);background:var(--card);color:var(--ink);
+  box-shadow:0 1px 3px rgba(15,23,42,.05);transition:transform .12s ease,box-shadow .12s ease;
+}
+.chip:hover{text-decoration:none;transform:translateY(-1px);box-shadow:0 4px 12px rgba(15,23,42,.1)}
+.chip-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.chip-primary:hover{color:#fff}
+.chip .fa{opacity:.85}
+
+/* ---------- Intro steps ---------- */
+.intro{padding:2rem 0 0}
+.intro-lede{font-size:1.05rem;max-width:46rem}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.9rem;margin:1.4rem 0 0;padding:0;list-style:none}
+.steps a{
+  display:block;height:100%;padding:1rem 1.1rem;background:var(--card);border:1px solid var(--line);
+  border-radius:var(--radius);color:var(--ink);box-shadow:0 1px 3px rgba(15,23,42,.04);
+  transition:border-color .12s ease,box-shadow .12s ease;
+}
+.steps a:hover{text-decoration:none;border-color:var(--accent);box-shadow:0 4px 14px rgba(79,70,229,.12)}
+.steps .n{display:block;font-size:.78rem;font-weight:800;color:var(--accent);letter-spacing:.05em;text-transform:uppercase;margin-bottom:.25rem}
+.steps .t{font-weight:600;font-size:.95rem;line-height:1.4}
+.cite-hint{font-size:.92rem;color:var(--muted);margin-top:1.2rem}
+
+/* ---------- App content ---------- */
+.content{padding-bottom:1rem}
+.content-subhead{
+  font-size:1.45rem;font-weight:750;letter-spacing:-.015em;margin:3rem 0 1rem;padding-top:1.2rem;
+  color:var(--ink);scroll-margin-top:1.5rem;border-top:1px solid var(--line);
+}
+.content-subhead::before{
+  content:"";display:block;width:44px;height:4px;border-radius:2px;margin-bottom:.8rem;
+  background:linear-gradient(90deg,var(--accent),var(--accent-2));
+}
+h2{scroll-margin-top:1.5rem}
+.App pre,.content pre{
+  white-space:pre-wrap;word-wrap:break-word;font-family:inherit;font-size:1rem;
+  margin:0 0 1rem;max-width:52rem;
+}
+.App pre pre{margin:0}
+.fig_title{text-align:center;color:var(--muted);font-size:.9rem !important;max-width:none !important;margin:.5rem auto 1.5rem !important}
+.error{color:#b91c1c;font-weight:600}
+.error:empty{display:none}
+
+/* Loading state */
+#root > pre:only-child{
+  display:block;background:var(--accent-soft);border:1px dashed #c7d2fe;border-radius:var(--radius);
+  padding:1rem 1.2rem;color:var(--accent);font-weight:600;
+}
+
+/* Tables */
+.App table,.static-table table{
+  display:block;max-width:100%;overflow-x:auto;
+  border-collapse:collapse;margin:1rem 0;font-size:.88rem;line-height:1.45;
+  background:var(--card);border:1px solid var(--line);border-radius:10px;
+  width:fit-content;
+}
+.App table thead,.static-table thead{
+  background:var(--accent-soft);border:0;font-weight:700;color:#312e81;text-align:center;
+}
+.App table td,.App table th,.static-table td,.static-table th{
+  border:0;border-bottom:1px solid var(--line);padding:.5rem .8rem;text-align:right;
+}
+.App table thead td,.App table thead th,.static-table thead th{border-bottom:2px solid #c7d2fe;text-align:center}
+.App table td:first-child,.static-table td:first-child{text-align:left;font-weight:600;color:var(--ink)}
+.App table tbody tr:nth-child(even),.static-table tbody tr:nth-child(even){background:#f8faff}
+.App table tbody tr:hover,.static-table tbody tr:hover{background:var(--accent-soft)}
+.App table tbody tr:last-child td,.static-table tbody tr:last-child td{border-bottom:0}
+
+/* Checkbox tree */
+.react-checkbox-tree{font-size:.95rem}
+.react-checkbox-tree label{border-radius:6px;padding:.1rem .3rem}
+.react-checkbox-tree label:hover{background:var(--accent-soft)}
+.rct-icon{color:var(--accent)}
+.rct-node-icon{color:var(--accent-2)}
+.rct-collapse *,.rct-checkbox *,.rct-node-icon *{width:auto}
+.rct-options{margin-bottom:.4rem}
+.rct-option{
+  border:1px solid var(--line);background:var(--card);border-radius:8px;padding:.25rem .5rem;
+  margin-right:.4rem;cursor:pointer;color:var(--muted);opacity:1;
+}
+.rct-option:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Plotly figures */
+#fig,#explainer_fig{max-width:100%;overflow-x:auto;overflow-y:hidden}
+.js-plotly-plot{margin:0 auto}
+
+/* ---------- Footer ---------- */
+.site-footer{
+  margin-top:3.5rem;border-top:1px solid var(--line);padding:2rem 0 1rem;color:var(--muted);font-size:.92rem;
+}
+.site-footer h2{font-size:1.1rem;color:var(--ink);margin:0 0 .6rem}
+.site-footer .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.5rem}
+.site-footer ul{list-style:none;margin:0;padding:0}
+.site-footer li{margin:.3rem 0}
+.bibtex{display:block;background:#0f172a;color:#e2e8f0;border-radius:10px;padding:1rem 1.2rem;overflow-x:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.78rem;line-height:1.55;white-space:pre;max-width:100%}
+.site-footer details summary{cursor:pointer;font-weight:600;color:var(--accent)}
+.footer-note{margin-top:1.6rem;padding-top:1rem;border-top:1px solid var(--line);font-size:.85rem}
+.counter-img{display:inline;width:1px;height:1px;opacity:0}
+
+/* ---------- Static (noscript) table ---------- */
+.static-table caption{caption-side:top;text-align:left;font-weight:600;padding:.4rem 0;color:var(--muted);font-size:.85rem}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1023px){
+  #menu{transform:translateX(-100%);box-shadow:none;padding-top:4.4rem}
+  #menu.open{transform:translateX(0);box-shadow:0 0 40px rgba(15,23,42,.4)}
+  #backdrop.open{display:block}
+  #menuLink{display:flex}
+  #main{margin-left:0}
+  .page{padding:0 1.1rem 2.5rem}
+  .hero{padding-top:4.6rem}
+}
+@media print{
+  #menu,#menuLink,#backdrop{display:none}
+  #main{margin-left:0}
+}
+</style>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Compare-xAI",
+  "alternateName": "Compare-xAI: Explainable AI Benchmark",
+  "url": "https://karim-53.github.io/cxai/",
+  "description": "Open interactive benchmark of explainable-AI (XAI) algorithms scored on functional tests.",
+  "inLanguage": "en"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  "name": "Compare-xAI benchmark results",
+  "description": "Benchmark scores of 16 post-hoc explainable-AI (XAI) algorithms (SHAP variants, LIME, SAGE, MAPLE, ANOVA, Archipelago, and more) evaluated on 22 functional tests covering fidelity, fragility, stability, simplicity, and stress testing.",
+  "url": "https://karim-53.github.io/cxai/",
+  "sameAs": "https://github.com/Karim-53/Compare-xAI/tree/main/data",
+  "license": "https://opensource.org/licenses/MIT",
+  "isAccessibleForFree": true,
+  "keywords": ["explainable AI","XAI","benchmark","SHAP","LIME","feature importance","feature attribution","interpretability"],
+  "creator": [
+    {"@type": "Person", "name": "Mohamed Karim Belaid"},
+    {"@type": "Person", "name": "Eyke Hüllermeier"},
+    {"@type": "Person", "name": "Maximilian Rabus"},
+    {"@type": "Person", "name": "Ralf Krestel"}
+  ],
+  "distribution": [{
+    "@type": "DataDownload",
+    "encodingFormat": "text/csv",
+    "contentUrl": "https://github.com/Karim-53/Compare-xAI/tree/main/data"
+  }],
+  "citation": "https://arxiv.org/abs/2207.14160"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ScholarlyArticle",
+  "headline": "Do We Need Another Explainable AI Method? Toward Unifying Post-hoc XAI Evaluation Methods into an Interactive and Multi-dimensional Benchmark",
+  "author": [
+    {"@type": "Person", "name": "Mohamed Karim Belaid"},
+    {"@type": "Person", "name": "Eyke Hüllermeier"},
+    {"@type": "Person", "name": "Maximilian Rabus"},
+    {"@type": "Person", "name": "Ralf Krestel"}
+  ],
+  "datePublished": "2022-07-28",
+  "url": "https://arxiv.org/abs/2207.14160",
+  "sameAs": "https://arxiv.org/pdf/2207.14160.pdf",
+  "about": "Explainable AI benchmark unifying functional evaluation tests of post-hoc XAI algorithms",
+  "isPartOf": {"@type": "WebSite", "url": "https://karim-53.github.io/cxai/", "name": "Compare-xAI"}
+}
+</script>
+<script type="application/ld+json">{
       "@context": "https://schema.org",
       "@type": "HowTo",
       "name": "How to compare explainable AI algorithms (xAI)",
@@ -142,79 +396,157 @@
           }
         }
       ]
-    }
-    </script>
+    }</script>
 </head>
-
 <body>
-  <div id="layout">
-  <a href="#menu" id="menuLink" class="menu-link">
-    <!-- Hamburger icon -->
-    <span></span>
-</a>
-<!-- https://purecss.io/layouts/side-menu/#home -->
-  <div id="menu">
-    <div class="pure-menu">
-        <a class="pure-menu-heading" href="#header">Compare-xAI</a>
+<a class="skip-link" href="#main">Skip to content</a>
 
-        <ul class="pure-menu-list">
-            <li class="pure-menu-item"><a href="#Filters" class="pure-menu-link">1. Filters</a></li>
-            <li class="pure-menu-item"><a href="#Overview_Plot" class="pure-menu-link">2. Overview</a></li>
-            <li class="pure-menu-item"><a href="#Explainer_details" class="pure-menu-link">3. Details</a></li>
-            <li class="pure-menu-item"><a href="#Explainer_limits" class="pure-menu-link">4. Limits</a></li>
+<button id="menuLink" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="menu"><span></span></button>
+<div id="backdrop"></div>
 
+<nav id="menu" aria-label="Main navigation">
+  <a class="brand" href="#header">Compare-<span class="x">xAI</span></a>
+  <p class="brand-tag">The interactive benchmark for explainable&nbsp;AI</p>
+  <ul>
+    <li><a href="#Filters">1 · Filters</a></li>
+    <li><a href="#Overview_Plot">2 · Overview</a></li>
+    <li><a href="#Explainer_details">3 · Details</a></li>
+    <li><a href="#Explainer_limits">4 · Limits</a></li>
+  </ul>
+  <hr class="menu-sep">
+  <ul class="menu-ext">
+    <li><a href="https://arxiv.org/abs/2207.14160" rel="noopener"><i class="fa fa-file-text-o" aria-hidden="true"></i>arXiv paper</a></li>
+    <li><a href="https://github.com/Karim-53/Compare-xAI/tree/main/data" rel="noopener"><i class="fa fa-download" aria-hidden="true"></i>Download data</a></li>
+    <li><a href="https://github.com/Karim-53/Compare-xAI#readme" rel="noopener"><i class="fa fa-github" aria-hidden="true"></i>GitHub</a></li>
+    <li><a href="#cite"><i class="fa fa-quote-right" aria-hidden="true"></i>Cite us</a></li>
+  </ul>
+</nav>
 
-            <!-- <li class="pure-menu-item menu-item-divided pure-menu-selected">
-              <a href="#Explainer_details" class="pure-menu-link">external link</a>
-          </li> -->
-            <li class="pure-menu-item"><a href="https://arxiv.org/pdf/2207.14160.pdf" class="pure-menu-link">ArXiv paper</a></li>
-            <li class="pure-menu-item"><a href="https://github.com/Karim-53/Compare-xAI/tree/main/data" class="pure-menu-link">Download data</a></li>
-            <li class="pure-menu-item"><a href="https://github.com/Karim-53/Compare-xAI#readme=" class="pure-menu-link">GitHub</a></li>
+<div id="layout">
+<main id="main">
+  <div class="page">
 
-        </ul>
+    <header class="hero">
+      <p class="hero-kicker">Open benchmark · 16 algorithms · 22 functional tests</p>
+      <h1 id="header">Compare-<span class="x">xAI</span></h1>
+      <p class="hero-sub">Which explainable-AI algorithm can you trust? Compare post-hoc XAI methods — SHAP, LIME, SAGE, MAPLE and more — on fidelity, fragility, stability, simplicity, and stress tests. Interactive, open source, and free to use.</p>
+      <div class="hero-badges">
+        <a class="chip chip-primary" href="#Filters"><i class="fa fa-rocket" aria-hidden="true"></i> Start comparing</a>
+        <a class="chip" href="https://arxiv.org/abs/2207.14160" rel="noopener"><i class="fa fa-file-text-o" aria-hidden="true"></i> Read the paper</a>
+        <a class="chip" href="https://github.com/Karim-53/Compare-xAI#readme" rel="noopener"><i class="fa fa-github" aria-hidden="true"></i> Star on GitHub</a>
+        <a class="chip" href="https://github.com/Karim-53/Compare-xAI/tree/main/data" rel="noopener"><i class="fa fa-download" aria-hidden="true"></i> Get the data (CSV)</a>
+      </div>
+    </header>
+
+    <section class="intro" aria-label="How it works">
+      <p class="intro-lede">Wondering what the difference is between public explainable-AI (xAI) tools? <strong>Compare-xAI</strong> helps you in four steps:</p>
+      <ol class="steps">
+        <li><a href="#Filters"><span class="n">Step 1</span><span class="t">Shortlist the xAI algorithms that fit your needs</span></a></li>
+        <li><a href="#Overview_Plot"><span class="n">Step 2</span><span class="t">Evaluate them with an intuitive scoring method</span></a></li>
+        <li><a href="#Explainer_details"><span class="n">Step 3</span><span class="t">Pick one xAI and learn its specific requirements</span></a></li>
+        <li><a href="#Explainer_limits"><span class="n">Step 4</span><span class="t">Learn the limits of the interpretability of its output</span></a></li>
+      </ol>
+      <p class="cite-hint">Found it useful? Don’t forget to <a href="#cite">cite our paper</a> 🙂</p>
+    </section>
+
+    <div class="content">
+      <noscript>
+        <section class="static-table">
+          <h2>Benchmark results (static snapshot)</h2>
+          <p>This interactive benchmark works best with JavaScript enabled, but here is a full static snapshot of the results — everyone is welcome to read and reuse this data (MIT license, please cite <a href="https://arxiv.org/abs/2207.14160">arXiv:2207.14160</a>).</p>
+          <p><strong>Benchmarked xAI algorithms:</strong> anova, archipelago, baseline_random, exact_shapley_values, kernel_shap, lime, maple, partition, permutation, permutation_partition, saabas, sage, shap_interaction, shapley_taylor_interaction, tree_shap, tree_shap_approximation.</p>
+          <p><strong>Test categories:</strong> Fidelity (does the explanation reflect the underlying model?), Fragility (can the explanation be manipulated on purpose?), Stability (is the output too sensitive to slight changes in data/model?), Simplicity (can users reason about model behavior from the explanation?), Stress (does the xAI scale to models trained on big data?).</p>
+          <table>
+            <caption>Average scores per xAI algorithm over all applicable functional tests (higher is better; time per test in seconds, lower is better).</caption>
+            <thead><tr><th>xAI algorithm</th><th>Overall score [%]</th><th>Time per test [s]</th><th>Tests completed</th><th>Fidelity [%]</th><th>Fragility [%]</th><th>Stability [%]</th><th>Simplicity [%]</th><th>Stress [%]</th></tr></thead>
+            <tbody>
+            <tr><td>archipelago</td><td>80.0</td><td>0.223</td><td>5</td><td>80.0</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+            <tr><td>kernel_shap</td><td>79.3</td><td>328</td><td>15</td><td>100.0</td><td>11.1</td><td>85.6</td><td>100.0</td><td>100.0</td></tr>
+            <tr><td>permutation</td><td>79.1</td><td>20.18</td><td>13</td><td>100.0</td><td>11.1</td><td>84.3</td><td>100.0</td><td>100.0</td></tr>
+            <tr><td>permutation_partition</td><td>79.1</td><td>19.94</td><td>13</td><td>100.0</td><td>11.1</td><td>84.3</td><td>100.0</td><td>100.0</td></tr>
+            <tr><td>tree_shap_approximation</td><td>75.0</td><td>0.006</td><td>7</td><td>100.0</td><td>–</td><td>49.9</td><td>–</td><td>–</td></tr>
+            <tr><td>tree_shap</td><td>74.2</td><td>0.013</td><td>11</td><td>64.0</td><td>–</td><td>84.3</td><td>–</td><td>–</td></tr>
+            <tr><td>exact_shapley_values</td><td>73.9</td><td>831</td><td>12</td><td>100.0</td><td>11.1</td><td>84.3</td><td>100.0</td><td>–</td></tr>
+            <tr><td>sage</td><td>66.1</td><td>47.27</td><td>10</td><td>66.7</td><td>11.1</td><td>96.9</td><td>100.0</td><td>55.7</td></tr>
+            <tr><td>shapley_taylor_interaction</td><td>65.8</td><td>1.81</td><td>5</td><td>65.8</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+            <tr><td>lime</td><td>65.6</td><td>374</td><td>17</td><td>89.0</td><td>0.0</td><td>99.7</td><td>98.5</td><td>40.9</td></tr>
+            <tr><td>partition</td><td>63.4</td><td>4.79</td><td>15</td><td>100.0</td><td>11.1</td><td>84.3</td><td>100.0</td><td>21.7</td></tr>
+            <tr><td>saabas</td><td>55.3</td><td>0.016</td><td>11</td><td>60.0</td><td>–</td><td>50.6</td><td>–</td><td>–</td></tr>
+            <tr><td>maple</td><td>39.3</td><td>120</td><td>17</td><td>60.0</td><td>11.1</td><td>100.0</td><td>0.0</td><td>25.5</td></tr>
+            <tr><td>baseline_random</td><td>25.4</td><td>0.053</td><td>22</td><td>12.9</td><td>50.0</td><td>30.7</td><td>0.0</td><td>33.3</td></tr>
+            <tr><td>anova</td><td>22.7</td><td>9.80</td><td>5</td><td>22.7</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+            <tr><td>shap_interaction</td><td>20.3</td><td>33.94</td><td>5</td><td>20.3</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+            </tbody>
+          </table>
+          <p>Full raw data (tests, sub-scores, workarounds for each limitation): <a href="https://github.com/Karim-53/Compare-xAI/tree/main/data">github.com/Karim-53/Compare-xAI/data</a>. A machine-readable summary of this site is available at <a href="%PUBLIC_URL%/llms.txt">/cxai/llms.txt</a>.</p>
+        </section>
+      </noscript>
+      <div id="root"></div>
+      <img class="counter-img" src="https://4805.short.gy/count-visit" title="Number of page visits since start" alt="" aria-hidden="true" loading="lazy">
     </div>
+
+    <footer class="site-footer">
+      <div class="cols">
+        <div>
+          <h2>About Compare-xAI</h2>
+          <p>Compare-xAI is an open, interactive benchmark that unifies functional testing of post-hoc explainable-AI algorithms into one multi-dimensional score. Built by researchers, for practitioners and researchers — and open to everyone, including crawlers and AI assistants: reuse, quote, and cite freely.</p>
+          <p>Benchmarked algorithms: anova, archipelago, exact_shapley_values, kernel_shap, lime, maple, partition, permutation, permutation_partition, saabas, sage, shap_interaction, shapley_taylor_interaction, tree_shap, tree_shap_approximation (plus a random baseline).</p>
+        </div>
+        <div>
+          <h2>Links</h2>
+          <ul>
+            <li><a href="https://arxiv.org/abs/2207.14160" rel="noopener">Paper — arXiv:2207.14160</a></li>
+            <li><a href="https://github.com/Karim-53/Compare-xAI#readme" rel="noopener">Benchmark source code (GitHub)</a></li>
+            <li><a href="https://github.com/Karim-53/Compare-xAI/tree/main/data" rel="noopener">Raw data — CSV downloads</a></li>
+            <li><a href="https://github.com/Karim-53/Compare-xAI/blob/main/data/01_raw/test.csv" rel="noopener">Workarounds for each xAI limitation</a></li>
+            <li><a href="https://github.com/Karim-53/cxai" rel="noopener">This website’s source code</a></li>
+            <li><a href="%PUBLIC_URL%/llms.txt">llms.txt — summary for AI assistants</a></li>
+          </ul>
+        </div>
+      </div>
+      <div id="cite" style="margin-top:1.6rem">
+        <details open>
+          <summary>How to cite Compare-xAI</summary>
+          <p style="margin:.6rem 0">If Compare-xAI helped your research or your product, please cite:</p>
+          <code class="bibtex">@article{belaid2022we,
+  title={Do We Need Another Explainable AI Method? Toward Unifying Post-hoc XAI Evaluation Methods into an Interactive and Multi-dimensional Benchmark},
+  author={Belaid, Mohamed Karim and H{\"u}llermeier, Eyke and Rabus, Maximilian and Krestel, Ralf},
+  journal={arXiv preprint arXiv:2207.14160},
+  year={2022}
+}</code>
+        </details>
+      </div>
+      <p class="footer-note">Made with ❤️ for the XAI community · Code &amp; data under MIT license · Everyone is welcome here — humans, search engines, and AI agents alike.</p>
+    </footer>
+
+  </div>
+</main>
 </div>
 
-  <div id='main' class="base">
-    <div class="header">
-      <h1 id="'header">Compare-xAI</h1>
-      <h2>A benchmark for feature importance explainable AI</h2>
-  </div>
-  <div class="content">
-  <!-- todo  add last update time -->
-  <h2 id='Abstract' class="content-subhead" >Abstract</h2>
-  <pre>Are you wondering what is the difference between public explainable AI (xAI) tools?
-Compare-xAI helps you:
-    <a href="#Filters"          >1. shortlist xAI that fits your needs</a>
-    <a href="#Overview_Plot"    >2. Evaluate them using an intuitive scoring method</a><!--  then select one xAI. -->
-    <a href="#Explainer_details">3. Select one xAI and learn more about its specific requirements</a>
-    <a href="#Explainer_limits" >4. Learn the limits of the interpretability of its output</a>
+<script>
+(function () {
+  var menu = document.getElementById('menu');
+  var btn = document.getElementById('menuLink');
+  var backdrop = document.getElementById('backdrop');
+  function setOpen(open) {
+    menu.classList.toggle('open', open);
+    backdrop.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  btn.addEventListener('click', function () { setOpen(!menu.classList.contains('open')); });
+  backdrop.addEventListener('click', function () { setOpen(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+  var links = menu.querySelectorAll('a[href^="#"]');
+  function setActive(hash) {
+    links.forEach(function (a) { a.classList.toggle('active', a.getAttribute('href') === hash); });
+  }
+  links.forEach(function (a) {
+    a.addEventListener('click', function () { setActive(a.getAttribute('href')); setOpen(false); });
+  });
+  if (location.hash) setActive(location.hash);
+  window.addEventListener('hashchange', function () { setActive(location.hash); });
+})();
+</script>
 
- Don't forget to <a href="https://arxiv.org/pdf/2207.14160.pdf">cite our paper</a> :)
-  </pre>
-      
-	<noscript>
-		You need to enable JavaScript to run this app.
-	</noscript>
-	<div id="root"></div>
-  <!-- hitwebcounter Code START -->
-  <!-- <a href="https://www.hitwebcounter.com" target="_blank"> -->
-  <!-- https://hitwebcounter.com/counter/counter.php?page=7993718&style=0024&nbdigits=4&type=page&initCount=0 -->
-  <img src="https://4805.short.gy/count-visit" title="Number of page visit since start" Alt=""   border="0" />
-  <!-- </a> -->
-</div></div>
-	<!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
-
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
-
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
-  </div>
-  <script src="https://purecss.io/js/ui.js"></script>
 </body>
-
 </html>
