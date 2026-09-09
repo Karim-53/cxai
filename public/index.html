@@ -2,38 +2,55 @@
 <html lang="en">
 
 <head>
-	<meta charset="utf-8">
-	<!-- <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"> -->
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="theme-color" content="#000000">
-	<!--
-      manifest.json provides metadata used when your web app is added to the
-      homescreen on Android. See https://developers.google.com/web/fundamentals/engage-and-retain/web-app-manifest/
-	<link rel="manifest" href="%PUBLIC_URL%/manifest.json">
-    -->
-	<link async rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-  <link async rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
-  <link rel="stylesheet" href="https://unpkg.com/purecss@2.1.0/build/pure-min.css" integrity="sha384-yHIFVG6ClnONEA5yB5DJXfW2/KC173DIQrYoZMEtBvGzmf0PKiGyNEqe9N6BNDBH" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://purecss.io/layouts/side-menu/styles.css"  crossorigin="anonymous">
-  <!-- Global site tag (gtag.js) - Google Analytics -->
-  <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-DQV8VB7FD2"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-DQV8VB7FD2');
-  </script> -->
-	<!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f5f4f1">
+  <title>Compare-xAI · A benchmark for feature importance explainable AI</title>
+  <meta name="description"
+    content="Compare-xAI is an open benchmark that evaluates explainable AI (xAI) algorithms — SHAP, LIME, Integrated Gradients and more — with functional unit tests. Filter by your use case, rank explainers by comprehensibility and runtime, and read the limits of each explanation.">
+  <link rel="canonical" href="https://karim-53.github.io/cxai/">
+  <link rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico">
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-	<title>Compare-xAI: Overview</title>
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Compare-xAI · A benchmark for feature importance explainable AI">
+  <meta property="og:description"
+    content="Explore, sort and filter the Compare-xAI benchmark results for explainable AI algorithms — entirely in your browser.">
+  <meta property="og:url" content="https://karim-53.github.io/cxai/">
+  <meta property="og:image" content="https://karim-53.github.io/cxai/rich_result/benchmark.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- Apply the stored / preferred colour scheme before first paint. -->
+  <script>
+    (function () {
+      try {
+        var stored = window.localStorage.getItem('cxai-theme');
+        var theme = (stored === 'light' || stored === 'dark')
+          ? stored
+          : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', theme === 'dark' ? '#131312' : '#f5f4f1');
+      } catch (e) { /* storage disabled: fall back to the light theme */ }
+    })();
+  </script>
+  <style>
+    /* Shown while the JavaScript bundle and the SQLite database download. */
+    html { background: #f5f4f1; }
+    html[data-theme="dark"] { background: #131312; }
+    #boot {
+      min-height: 70vh; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 1rem; color: #52514e; font: 400 1rem/1.6 ui-sans-serif, system-ui,
+      -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+    html[data-theme="dark"] #boot { color: #c3c2b7; }
+    #boot span {
+      width: 2rem; height: 2rem; border-radius: 50%; border: 3px solid rgba(120,118,111,.35);
+      border-top-color: #2a78d6; animation: boot-spin .8s linear infinite;
+    }
+    @keyframes boot-spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { #boot span { animation: none; } }
+  </style>
+
   <!-- https://developers.google.com/search/docs/advanced/structured-data/how-to -->
   <script type="application/ld+json">
     {
@@ -86,7 +103,7 @@
           "url": "https://karim-53.github.io/cxai/#Overview_Plot",
           "itemListElement": [{
             "@type": "HowToTip",
-            "text": "A perfect xAI should obtain a score of 100% and finish all tests in the smallest amount of time. Therefore, it would be located on the top right."
+            "text": "A perfect xAI should obtain a score of 100% and finish all tests in the smallest amount of time. Therefore, it would be located on the top left."
           }, {
             "@type": "HowToDirection",
             "text": "Read the skyline of xAI with the highest performance."
@@ -143,78 +160,33 @@
         }
       ]
     }
-    </script>
+  </script>
 </head>
 
 <body>
-  <div id="layout">
-  <a href="#menu" id="menuLink" class="menu-link">
-    <!-- Hamburger icon -->
-    <span></span>
-</a>
-<!-- https://purecss.io/layouts/side-menu/#home -->
-  <div id="menu">
-    <div class="pure-menu">
-        <a class="pure-menu-heading" href="#header">Compare-xAI</a>
+  <noscript>
+    <h1>Compare-xAI</h1>
+    <h2>A benchmark for feature importance explainable AI</h2>
+    <p>Are you wondering what is the difference between public explainable AI (xAI) tools? Compare-xAI helps you:</p>
+    <ol>
+      <li>Shortlist xAI that fits your needs.</li>
+      <li>Evaluate them using an intuitive scoring method.</li>
+      <li>Select one xAI and learn more about its specific requirements.</li>
+      <li>Learn the limits of the interpretability of its output.</li>
+    </ol>
+    <p>This interactive benchmark runs entirely in your browser and needs JavaScript enabled. You can still
+      <a href="https://arxiv.org/pdf/2207.14160.pdf">read our paper</a>, browse the
+      <a href="https://github.com/Karim-53/Compare-xAI#readme">source code on GitHub</a> or
+      <a href="https://github.com/Karim-53/Compare-xAI/tree/main/data">download the raw data</a>.
+    </p>
+  </noscript>
 
-        <ul class="pure-menu-list">
-            <li class="pure-menu-item"><a href="#Filters" class="pure-menu-link">1. Filters</a></li>
-            <li class="pure-menu-item"><a href="#Overview_Plot" class="pure-menu-link">2. Overview</a></li>
-            <li class="pure-menu-item"><a href="#Explainer_details" class="pure-menu-link">3. Details</a></li>
-            <li class="pure-menu-item"><a href="#Explainer_limits" class="pure-menu-link">4. Limits</a></li>
-
-
-            <!-- <li class="pure-menu-item menu-item-divided pure-menu-selected">
-              <a href="#Explainer_details" class="pure-menu-link">external link</a>
-          </li> -->
-            <li class="pure-menu-item"><a href="https://arxiv.org/pdf/2207.14160.pdf" class="pure-menu-link">ArXiv paper</a></li>
-            <li class="pure-menu-item"><a href="https://github.com/Karim-53/Compare-xAI/tree/main/data" class="pure-menu-link">Download data</a></li>
-            <li class="pure-menu-item"><a href="https://github.com/Karim-53/Compare-xAI#readme=" class="pure-menu-link">GitHub</a></li>
-
-        </ul>
+  <div id="root">
+    <div id="boot">
+      <span></span>
+      <p>Crunching the latest data, just for you. Hang tight…</p>
     </div>
-</div>
-
-  <div id='main' class="base">
-    <div class="header">
-      <h1 id="'header">Compare-xAI</h1>
-      <h2>A benchmark for feature importance explainable AI</h2>
   </div>
-  <div class="content">
-  <!-- todo  add last update time -->
-  <h2 id='Abstract' class="content-subhead" >Abstract</h2>
-  <pre>Are you wondering what is the difference between public explainable AI (xAI) tools?
-Compare-xAI helps you:
-    <a href="#Filters"          >1. shortlist xAI that fits your needs</a>
-    <a href="#Overview_Plot"    >2. Evaluate them using an intuitive scoring method</a><!--  then select one xAI. -->
-    <a href="#Explainer_details">3. Select one xAI and learn more about its specific requirements</a>
-    <a href="#Explainer_limits" >4. Learn the limits of the interpretability of its output</a>
-
- Don't forget to <a href="https://arxiv.org/pdf/2207.14160.pdf">cite our paper</a> :)
-  </pre>
-      
-	<noscript>
-		You need to enable JavaScript to run this app.
-	</noscript>
-	<div id="root"></div>
-  <!-- hitwebcounter Code START -->
-  <!-- <a href="https://www.hitwebcounter.com" target="_blank"> -->
-  <!-- https://hitwebcounter.com/counter/counter.php?page=7993718&style=0024&nbdigits=4&type=page&initCount=0 -->
-  <img src="https://4805.short.gy/count-visit" title="Number of page visit since start" Alt=""   border="0" />
-  <!-- </a> -->
-</div></div>
-	<!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
-
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
-
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
-  </div>
-  <script src="https://purecss.io/js/ui.js"></script>
 </body>
 
 </html>

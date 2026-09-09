@@ -1,25 +1,25 @@
 {
   "files": {
-    "main.css": "/cxai/static/css/main.14e3e1ab.chunk.css",
-    "main.js": "/cxai/static/js/main.9bc2aae0.chunk.js",
-    "main.js.map": "/cxai/static/js/main.9bc2aae0.chunk.js.map",
+    "main.css": "/cxai/static/css/main.87d27ae7.chunk.css",
+    "main.js": "/cxai/static/js/main.e4800baa.chunk.js",
+    "main.js.map": "/cxai/static/js/main.e4800baa.chunk.js.map",
     "runtime-main.js": "/cxai/static/js/runtime-main.ee0f6e99.js",
     "runtime-main.js.map": "/cxai/static/js/runtime-main.ee0f6e99.js.map",
     "static/css/2.870c4026.chunk.css": "/cxai/static/css/2.870c4026.chunk.css",
-    "static/js/2.53ec840e.chunk.js": "/cxai/static/js/2.53ec840e.chunk.js",
-    "static/js/2.53ec840e.chunk.js.map": "/cxai/static/js/2.53ec840e.chunk.js.map",
+    "static/js/2.0c85656e.chunk.js": "/cxai/static/js/2.0c85656e.chunk.js",
+    "static/js/2.0c85656e.chunk.js.map": "/cxai/static/js/2.0c85656e.chunk.js.map",
     "index.html": "/cxai/index.html",
     "sql-wasm.wasm": "/cxai/sql-wasm-2b277767061e6a2529fe1f2e6fe80b4a.wasm",
     "static/css/2.870c4026.chunk.css.map": "/cxai/static/css/2.870c4026.chunk.css.map",
-    "static/css/main.14e3e1ab.chunk.css.map": "/cxai/static/css/main.14e3e1ab.chunk.css.map",
-    "static/js/2.53ec840e.chunk.js.LICENSE.txt": "/cxai/static/js/2.53ec840e.chunk.js.LICENSE.txt",
+    "static/css/main.87d27ae7.chunk.css.map": "/cxai/static/css/main.87d27ae7.chunk.css.map",
+    "static/js/2.0c85656e.chunk.js.LICENSE.txt": "/cxai/static/js/2.0c85656e.chunk.js.LICENSE.txt",
     "static/media/database.88820a9c.bin": "/cxai/static/media/database.88820a9c.bin"
   },
   "entrypoints": [
     "static/js/runtime-main.ee0f6e99.js",
     "static/css/2.870c4026.chunk.css",
-    "static/js/2.53ec840e.chunk.js",
-    "static/css/main.14e3e1ab.chunk.css",
-    "static/js/main.9bc2aae0.chunk.js"
+    "static/js/2.0c85656e.chunk.js",
+    "static/css/main.87d27ae7.chunk.css",
+    "static/js/main.e4800baa.chunk.js"
   ]
 }

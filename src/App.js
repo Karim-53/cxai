@@ -1,527 +1,1269 @@
-// some sql.js op https://phiresky.github.io/blog/2021/hosting-sqlite-databases-on-github-pages/
-// todo https://wordpress.org/ for the template
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import initSqlJs from "sql.js";
+import pf from "pareto-frontier";
+import Plot from "react-plotly.js";
+import CheckboxTree from "react-checkbox-tree";
+import "react-checkbox-tree/lib/react-checkbox-tree.css";
 import "./styles.css";
-import initSqlJs from "sql.js"; // https://sql.js.org/#%2F=     test env https://sql.js.org/examples/GUI/index.html
-import pf from 'pareto-frontier';
-import DB from './database';
-import sqlWasm from "!!file-loader?name=sql-wasm-[contenthash].wasm!sql.js/dist/sql-wasm.wasm"; // Required to let webpack 4 know it needs to copy the wasm file to our assets
-import Plot from 'react-plotly.js';
-import CheckboxTree from 'react-checkbox-tree';  // https://jakezatecky.github.io/react-checkbox-tree/
-import "react-checkbox-tree/lib/react-checkbox-tree.css";  // https://github.com/jakezatecky/react-checkbox-tree   
-// import DataTable from 'react-data-table-component'; todo [after acceptance] https://datatables.net/
-import jump from "./jump.js";
-const nodes = [
-{   
-  value: 'main_checklist',
-  label: 'Filters:',
-  showCheckbox: false,
-  children: [
-{ // todo include all of them in one big node "Filter:"
-  value: 'supported_model_checklist',
-  label: 'I need to explain specific AI model(s):',
-  children: [
-      { value: 'supported_model_model_agnostic', label: 'Any (Model agnostic xAI alg.)', sql:'xai.supported_model_model_agnostic = 1' },
-      { value: 'supported_model_tree_based', label: 'Tree-based', sql:'xai.supported_model_tree_based = 1' },
-      { value: 'supported_model_neural_network', label: 'Neural Network', sql:'xai.supported_model_neural_network = 1'  },
-  ],
-},
-{
-  value: 'required_output_checklist',
-  label: 'I need specific output(s) from the xAI:',
-  children: [
-      { value: 'output_importance', label: 'Feature importance (Global Explanation)', sql:'xai.output_importance = 1'},
-      { value: 'output_attribution', label: 'Feature attribution (Local Explanation)', sql:'xai.output_attribution = 1' }, // We discuss the attribution problem, i.e., the problem of distributing the prediction score of a model for a specific input to its base features (cf. [15, 10, 19]); the attribution to a base feature can be interpreted as the importance of the feature to the prediction. https://arxiv.org/pdf/1908.08474.pdf
-      { value: 'output_interaction', label: 'Pair feature interaction (Under development)', sql:'xai.output_interaction = 1' }, // Pair feature interaction (Global Explanation)
-      // # Definition 1 (Statistical Non-Additive Interaction). A function f contains a statistical non-additive interaction of multiple features indexed in set I if and only if f cannot be decomposed into a sum of |I| subfunctions fi , each excluding the i-th interaction variable: f(x) =/= Sum i∈I fi(x\{i}).
-      // #  Def. 1 identifies a non-additive effect among all features I on the output of function f (Friedman and Popescu, 2008; Sorokina et al., 2008; Tsang et al., 2018a). see https://arxiv.org/pdf/2103.03103.pdf
-      // # todo [after acceptance] we need a page with a clear description of each option
-      // { value: 'todo1', label: '#Future work: Pair interaction (Local Ex), multi F interaction, NLP, debugging ...', disabled:true  }
-  ]
-},
-{ value: 'required_input_data_', label: 'Check if we can NOT provide the following information to the xAI algorithm:',
-  children: [
-      { value: 'required_input_X_reference', label: 'A reference input data', sql:'xai.required_input_X_reference = 0' },
-      { value: 'required_input_truth_to_explain', label: 'Target values of the data points to explain (i.e. truth, not prediction)', sql:'xai.required_input_truth_to_explain = 0' },
-  ]
-},
-{ value: 'explainer_input_xai_', label: 'Check if we can NOT execute the following operations on the AI model:',
-  children: [
-      { value: 'required_input_predict_func', label: 'Perform addional predictions.', sql:'xai.required_input_predict_func = 0' }
-      // { value: 'required_input_train_function', label: '#Future work: Retrain the model.', disabled:true },
-  ]
-},
-{ value: 'test_adversarial_attacks', label: 'I trust the xAI\'s output (I created the data and the model myself)', sql: "t.category != 'fragility'"}
-// { value: 'assumptions_data_distribution_iid', label: '#Future work: Assume input features to be independent and identically distributed', disabled:true },
-// { value: 'explainer_need_gpu', label: '#Future work: Constraint on hardware equipement: xAI alg. require a GPU.', disabled:true }
-// {
-//   value: 'uid',
-//   label: 'visible'
-// },
-]}];
 
-var node_sql = {}
-function flatten_nodes(nodes, node_sql){
-  nodes.map( x => {if ('sql' in x) node_sql[x.value]= x.sql})
-  nodes.map( x => {if ('children' in x) flatten_nodes(x.children, node_sql)})
-}
-flatten_nodes(nodes, node_sql)
+import DB from "./database";
+// Required to let webpack 4 know it needs to copy the wasm file to our assets
+import sqlWasm from "!!file-loader?name=sql-wasm-[contenthash].wasm!sql.js/dist/sql-wasm.wasm";
 
-function average(data) {
-  /*Can't find an average function in JS, made one
-  This function is able to handle null values!!!*/
-    var count = null;
-    var sum = null;
-    for (let i=0; i<data.length; i++) {
-      if (data[i]) {
-        count++;
-        sum = sum + data[i];
-      }
+import {
+  CATEGORIES,
+  CATEGORY_DEFINITION,
+  COLUMN_LABEL,
+  NODES,
+  TOTALS_SQL,
+  detailsSql,
+  keptTestsSql,
+  overviewSql,
+  queryOne,
+  testsSql,
+  toRows,
+} from "./queries";
+import {
+  average,
+  formatAuthors,
+  formatDate,
+  formatScore,
+  formatSeconds,
+  isMissing,
+  parseBibtex,
+  renderText,
+} from "./format";
+import { PALETTE, PLOT_CONFIG, axisStyle, baseLayout, useMediaQuery, useTheme } from "./theme";
+import {
+  IconAlert,
+  IconChart,
+  IconCheck,
+  IconChevronDown,
+  IconChevronRight,
+  IconClose,
+  IconCopy,
+  IconDownload,
+  IconExternal,
+  IconFilter,
+  IconGithub,
+  IconList,
+  IconMenu,
+  IconMoon,
+  IconPaper,
+  IconPointer,
+  IconSquare,
+  IconSquareChecked,
+  IconSquareHalf,
+  IconSun,
+} from "./icons";
+
+const ARXIV = "https://arxiv.org/pdf/2207.14160.pdf";
+const REPO = "https://github.com/Karim-53/Compare-xAI";
+const DATA = "https://github.com/Karim-53/Compare-xAI/tree/main/data";
+const TEST_CSV = "https://github.com/Karim-53/Compare-xAI/blob/main/data/01_raw/test.csv";
+
+const SECTIONS = [
+  { id: "Filters", num: "1", label: "Filters", icon: IconFilter },
+  { id: "Overview_Plot", num: "2", label: "Overview", icon: IconChart },
+  { id: "Explainer_details", num: "3", label: "Details", icon: IconList },
+  { id: "Explainer_limits", num: "4", label: "Limits", icon: IconAlert },
+];
+
+const EXTERNAL_LINKS = [
+  { href: ARXIV, label: "ArXiv paper", icon: IconPaper },
+  { href: DATA, label: "Download data", icon: IconDownload },
+  { href: `${REPO}#readme`, label: "GitHub", icon: IconGithub },
+];
+
+const ALL_PARENTS = (function collect(nodes, accumulator = []) {
+  nodes.forEach((node) => {
+    if (node.children) {
+      accumulator.push(node.value);
+      collect(node.children, accumulator);
     }
-    if (count) {var average = Number( sum / count)} else { average=null}
-    return average;
+  });
+  return accumulator;
+})(NODES);
+
+const DEFAULT_CHECKED = ["output_importance"];
+const DEFAULT_EXPLAINER = "kernel_shap";
+
+const TREE_ICONS = {
+  check: <IconSquareChecked className="rct-icon rct-icon-check" />,
+  uncheck: <IconSquare className="rct-icon rct-icon-uncheck" />,
+  halfCheck: <IconSquareHalf className="rct-icon rct-icon-half-check" />,
+  expandClose: <IconChevronRight className="rct-icon rct-icon-expand-close" />,
+  expandOpen: <IconChevronDown className="rct-icon rct-icon-expand-open" />,
+  expandAll: <span />,
+  collapseAll: <span />,
+  parentClose: null,
+  parentOpen: null,
+  leaf: null,
+};
+
+const OVERVIEW_COLUMNS = [
+  { key: "explainer", label: COLUMN_LABEL.explainer, primary: true },
+  { key: "average_score", label: COLUMN_LABEL.average_score, type: "score" },
+  { key: "time_per_test", label: COLUMN_LABEL.time_per_test, type: "seconds" },
+  { key: "eligible_points", label: COLUMN_LABEL.eligible_points, type: "number" },
+].concat(
+  CATEGORIES.map((category) => ({
+    key: `percentage_${category}`,
+    label: COLUMN_LABEL[`percentage_${category}`],
+    type: "score",
+    secondary: true, // folded away on phones, where every cell becomes a row
+  }))
+);
+
+const TEST_COLUMNS = [
+  { key: "Test", label: "Test", primary: true },
+  { key: "Score [%]", label: "Score [%]", type: "score" },
+  { key: "Category", label: "Category" },
+  { key: "Tested xAI output", label: "Tested xAI output" },
+];
+
+function scrollToId(id) {
+  const element = document.getElementById(id);
+  if (!element) return;
+  const reduceMotion =
+    typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (element.scrollIntoView) {
+    try {
+      element.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+      return;
+    } catch (error) {
+      /* older browsers: no options object */
+    }
+    element.scrollIntoView();
   }
-// if (window.location.href.includes("localhost")) { console.log('localhost');}
-
-const categories = ['fidelity', 'fragility', 'stability', 'simplicity', 'stress']  // todo get it from db
-const category_definition = {'fidelity':     'Test if the xAI\' output reflects the underlying model.',
-      'fragility':'Test if the xAI output is easily manipulable on purpose.',
-      'stability':'Test if the xAI output is too sensitive to slight changes in the dataset/model.',
-      'simplicity':   'Users should be able to look at the explanation, and reason about model behavior.',
-      'stress': 'Test whether the xAI can explain models trained on big data.'}
-
-const pecentage_per_category = categories.map(category => ' ROUND(AVG(case category when \''+category+'\' then score end)*100.0,1) AS percentage_'+category).join(',\n ');
-const sql_to_nice_name = {'explainer':'Explainer',
-  'time_per_test':'Average time per test [second]',
-  'eligible_points':'Number of completed tests',
-  'percentage_fidelity':'Fidelity [%]',
-  'percentage_fragility':'Fragility [%]',
-  'percentage_stability':'Stability [%]',
-  'percentage_simplicity':'Simplicity [%]',
-  'percentage_stress':'Stress test [%]',
 }
+
+/* ========================================================================== */
+/* Root                                                                        */
+/* ========================================================================== */
+
 export default function App() {
   const [db, setDb] = useState(null);
   const [error, setError] = useState(null);
 
-  useEffect(async () => {
-    // sql.js needs to fetch its wasm file, so we cannot immediately instantiate the database
-    // without any configuration, initSqlJs will fetch the wasm files directly from the same path as the js
-    // see ../craco.config.js
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const SQL = await initSqlJs({ locateFile: () => sqlWasm });
+        const response = await fetch(DB);
+        if (!response.ok) throw new Error(`Could not download the benchmark database (HTTP ${response.status}).`);
+        const buffer = await response.arrayBuffer();
+        if (cancelled) return;
+        setDb(new SQL.Database(new Uint8Array(buffer)));
+      } catch (loadError) {
+        if (!cancelled) setError(loadError);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (error) {
+    return (
+      <div className="boot">
+        <IconAlert style={{ width: 28, height: 28, color: "var(--critical)" }} />
+        <div>
+          <p>
+            <strong>The benchmark database could not be loaded.</strong>
+          </p>
+          <p className="muted">{String(error.message || error)}</p>
+        </div>
+        <button type="button" className="btn" onClick={() => window.location.reload()}>
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  if (!db) {
+    return (
+      <div className="boot">
+        <div className="spinner" />
+        <p>Crunching the latest data, just for you. Hang tight…</p>
+      </div>
+    );
+  }
+
+  return <Benchmark db={db} />;
+}
+
+/* ========================================================================== */
+/* Page                                                                        */
+/* ========================================================================== */
+
+function Benchmark({ db }) {
+  const [theme, toggleTheme] = useTheme();
+  const compact = !useMediaQuery("(min-width: 768px)");
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+
+  const [checked, setChecked] = useState(DEFAULT_CHECKED);
+  const [expanded, setExpanded] = useState(ALL_PARENTS);
+  const [selectedExplainer, setSelectedExplainer] = useState(DEFAULT_EXPLAINER);
+  const [navOpen, setNavOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState(SECTIONS[0].id);
+  const menuButton = useRef(null);
+
+  /* ---- data ------------------------------------------------------------- */
+  const overview = useMemo(() => {
     try {
-      const sqlPromise = initSqlJs({ locateFile: () => sqlWasm });
-      const dataPromise = fetch(DB).then(res => res.arrayBuffer()).catch((error) => {
-        console.log('File not found:')
-        console.log(error)
-      });
-      const [SQL, buf] = await Promise.all([sqlPromise, dataPromise])
-      console.log('sql ok.')
-      setDb(new SQL.Database(new Uint8Array(buf)));
-    } catch (err) {
-      console.log('sql error:')
-      setError(err);
+      const rows = toRows(queryOne(db, overviewSql(checked))).map((row) => ({
+        ...row,
+        average_score: average(CATEGORIES.map((category) => row[`percentage_${category}`])),
+      }));
+      const kept = queryOne(db, keptTestsSql(checked));
+      const totals = queryOne(db, TOTALS_SQL);
+      return {
+        rows,
+        keptTests: kept.values.length ? kept.values[0][0] : 0,
+        totalTests: totals.values.length ? totals.values[0][0] : 0,
+        totalExplainers: totals.values.length ? totals.values[0][1] : 0,
+        lastUpdated: totals.values.length ? totals.values[0][2] : null,
+        error: null,
+      };
+    } catch (queryError) {
+      return { rows: [], keptTests: 0, totalTests: 0, totalExplainers: 0, lastUpdated: null, error: queryError };
+    }
+  }, [db, checked]);
+
+  const explainerData = useMemo(() => {
+    try {
+      return {
+        details: queryOne(db, detailsSql(selectedExplainer)),
+        tests: queryOne(db, testsSql(selectedExplainer, checked)),
+        error: null,
+      };
+    } catch (queryError) {
+      return { details: { columns: [], values: [] }, tests: { columns: [], values: [] }, error: queryError };
+    }
+  }, [db, selectedExplainer, checked]);
+
+  const selectedRow = overview.rows.find((row) => row.explainer === selectedExplainer) || null;
+  const queryError = overview.error || explainerData.error;
+
+  /* ---- navigation ------------------------------------------------------- */
+  useEffect(() => {
+    if (typeof window === "undefined" || !("IntersectionObserver" in window)) return undefined;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible.length) setActiveSection(visible[0].target.id);
+      },
+      { rootMargin: "-15% 0px -70% 0px" }
+    );
+    SECTIONS.forEach((section) => {
+      const element = document.getElementById(section.id);
+      if (element) observer.observe(element);
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!navOpen) return undefined;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event) => {
+      if (event.key === "Escape" || event.key === "Esc") {
+        setNavOpen(false);
+        if (menuButton.current) menuButton.current.focus();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [navOpen]);
+
+  /* The page content only exists once the database is parsed, so the browser
+     cannot honour a #hash on load by itself. */
+  useEffect(() => {
+    const hash = window.location.hash.replace("#", "");
+    if (hash) window.setTimeout(() => scrollToId(hash), 60);
+  }, []);
+
+  const goToSection = useCallback((id) => {
+    setNavOpen(false);
+    scrollToId(id);
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(null, "", `#${id}`);
     }
   }, []);
 
-  if (error) return <pre>{error.toString()}</pre>;
-  else if (!db) return <pre>Crunching the latest data, just for you. Hang tight…</pre>;
-  else return <SQLRepl db={db} />;
-}
-
-function to_dict(arr){
-  let dico = {}
-  for(let i = 0; i < arr.length; i++){
-      dico[arr[i]] = i;
-  }
-  return dico
-}
-const arrayColumn = (arr, n) => arr.map(x => x[n]);
-const average_score = (arr, dico) => arr.map(x => average( categories.map(c => x[dico['percentage_' + c]])));
-
-function sql(explainer, checked){
-  var where = checked.filter(checkbox_id => checkbox_id in node_sql).map( x => node_sql[x]).join(' AND ')
-  if (where.length > 0) where = 'Where ' + where + ' \n'
-  const r = `
---0 For Plotly
-SELECT	c.explainer,
---ROUND(AVG(c.time),2) AS time_per_test,
-xai.time_per_test as time_per_test,
-count(c.score) AS eligible_points,
-` + pecentage_per_category + ` 
-FROM cross_tab AS c
-Left JOIN test AS t ON c.test = t.test
-Left JOIN explainer AS xai ON c.explainer = xai.explainer
-` + where + ` 
-GROUP BY c.explainer;
-
---1 details about the selected explainer
-SELECT	description AS 'xAI description',
-        supported_models AS 'Supported AI models',
-        outputs AS 'xAI outputs',
-        required_input_data AS 'Required info by the xAI',
-        p.source_paper_bibliography AS 'Original paper',
-        source_code AS 'Source code'
-FROM explainer AS xai
-Left JOIN paper AS p ON xai.source_paper_tag = p.source_paper_tag
-Where (explainer = '`+explainer+`');
-
---2 detailed scoring of the selected explainer
-SELECT	test.short_description AS '  ______Short_description______  ',
-ROUND(score,2) AS Score, category AS 'test category',
-tested_xai_output AS 'Tested_xAI_output________'
---  test.test, subtest no ROUND(time) to make things readable
-FROM cross_tab
-Left JOIN test ON cross_tab.test = test.test
-Where (explainer = '`+explainer+`') and (score IS NOT NULL)
-Order By Score;
--- order also by 'test category' test_subtest, 'Tested_xAI_output________';
-
---3 Kept tests
-SELECT	count(DISTINCT c.test_subtest) AS kept_tests
-FROM cross_tab AS c
-Left JOIN test AS t ON c.test = t.test
-Left JOIN explainer AS xai ON c.explainer = xai.explainer
-` + where + `;
-
---4 total xAi and tests
-SELECT	count(DISTINCT c.test_subtest) AS total_eligible_points,
-    	count(DISTINCT c.explainer) AS total_explainers
-FROM cross_tab AS c;
-`;
-// console.log(r)
-return r
-}
-/**
- * A simple SQL read-eval-print-loop
- * @param {{db: import("sql.js").Database}} props
- */
-function SQLRepl({ db }) {
-  const [selected_explainer, setExplainer] = useState('kernel_shap');
-  const [checked, setChecked] = useState(['output_importance']);
-  const [expanded, setExpanded] = useState(['main_checklist']);
-  const [results, setResults] = useState(db.exec(sql(selected_explainer, checked)));
-  const [error, setError] = useState(null);
-  
-  // console.log(sql(selected_explainer));
-  // console.log('checked', checked);
-  function sql_exec(new_sql) {
-    try {
-      // The sql is executed synchronously on the UI thread. You may want to use a web worker here instead
-      setResults(db.exec(new_sql)); // an array of objects is returned
-      setError(null);
-    } catch (err) {
-      // exec throws an error when the SQL statement is invalid
-      setError(err);
-      setResults([]);
-    }
-  }
-
-  function plotly_click(data){
-    console.log('plotly_click:')
-    console.log(data)
-    console.log(data.points) 
-  
-    let explainer = data.points[0].text
-  
-    setExplainer(explainer)
-    try {
-      jump('Explainer_details')
-    } catch (error) {
-      console.error(error);
-    }
-    
-  }
-  var df;
-  df = results[0];
-  var column = to_dict(df.columns);
-
-  const percentage = average_score(df.values, column)
-  const time_per_test = arrayColumn(df.values, column['time_per_test']);
-  const eligible_points = arrayColumn(df.values, column['eligible_points']);
-  const text = arrayColumn(df.values, column['explainer']);
-  
-  const kept_xai = df.values.length
-  const kept_tests = results[3].values[0][0]
-  const total_eligible_points = results[4].values[0][0]
-  const total_explainers = results[4].values[0][1]
-  var merged = []
-  for (let i = 0; i < time_per_test.length; i++) {
-    merged.push([percentage[i], time_per_test[i]]);
-  }
-  const pareto = pf.getParetoFrontier(merged, { optimize: 'bottomRight' });
-
-  const pareto_time_per_test = arrayColumn(pareto, 1);
-  const pareto_percentage = arrayColumn(pareto, 0);
-
-  // }
-
-
-  const trace1 = { // todo after acceptance Plotly.animate('graph', { https://plotly.com/javascript/plotlyjs-function-reference/#plotlyanimate
-    x: time_per_test,
-    y: percentage,
-    mode: 'markers+text',
-    type: 'scatter',
-    name: 'Explainers',
-    text: text, // hover https://plotly.com/javascript/reference/
-    textposition: time_per_test.map( (x,idx) => idx % 2 === 0  ? 'top center': 'bottom center'),
-    cliponaxis:false,
-    textfont: {
-      family:  'Raleway, sans-serif'
+  const selectExplainer = useCallback(
+    (name) => {
+      if (!name) return;
+      setSelectedExplainer(name);
+      goToSection("Explainer_details");
     },
-    // legendgroup:"exp", // did not help :(
-    // showlegend:true,
-    marker: {
-      size: eligible_points.map(x => 2*x),
-      // showlegend:true, // did not help :(
-      // legendgroup:"size",
-     }
-  };
+    [goToSection]
+  );
 
+  /* ---- derived numbers -------------------------------------------------- */
+  const keptExplainers = overview.rows.length;
+  const tooManyFilters = keptExplainers <= 1;
+  const categoryScores = selectedRow
+    ? CATEGORIES.map((category) => selectedRow[`percentage_${category}`])
+    : CATEGORIES.map(() => null);
 
-  const trace2 = {
-    x: pareto_time_per_test,
-    y: pareto_percentage,
-    mode: 'lines',
-    type: 'scatter',
-    name: 'Pareto front',
-    // text: ['B-a', 'B-b', 'B-c', 'B-d', 'B-e'],
-    textfont : {
-      family:'Times New Roman'
-    },
-    textposition: 'bottom center',
-    // marker: { size: 6 }
-  };
-  const data = [ trace1, trace2 ];
-
-  const layout = {
-    width: 800,
-    height: 580,
-    margin: {
-      l: 55,
-      r: 0,
-      b: 35,
-      t: 35,
-      pad: 0
-    },
-    family: 'roboto', // not sure it works
-    xaxis: {
-      range: [ -2.8, 3.5 ],
-      type: 'log',
-      // autorange: true,
-      title: {
-        text: 'Fast alg. <--     Average time per test [Seconds] ↓     --> Slow alg.'
-      }
-    },
-    yaxis: {
-      range: [20, 100],
-      title: {
-        text: 'Comprehensibility score<br>Poor <--   Average performance per test [%] ↑  --> Excellent'
-      }
-    },
-    legend: {
-      "tracegroupgap": 20,
-      color: '#999',
-      x:1,
-      y: 0,
-      xanchor: 'right',
-      // xref: 'paper',
-      yref: 'paper',
-      font: {
-        family: 'roboto, Arial, sans-serif',
-        // size: 20,
-        // color: 'grey',
-      },
-    },
-    annotations: [
-      {
-        x: 0.02,
-        y: 100,
-        xref: 'paper',
-        yref: 'y',
-        text: 'Best xAI(s) are close to this point.',
-        showarrow: true,
-        arrowhead: 7,
-        ax: 40,
-        ay: -30,
-        font: {color:'#636363'},
-        arrowcolor:'#636363',
-      }
-    ],
-
-    // title:{
-    //   text:"<b>Figure 1</b>: Global overview of the explainers' performance.<br><b>Tip</b>: Click on an explainer for more details.",
-    // }
-  };  // todo [after acceptance] autosize: true, https://dev.to/dheerajmurali/building-a-responsive-chart-in-react-with-plotly-js-4on8
-
-  const explainer_df = results[1]
-  const explainer_column = to_dict(explainer_df.columns);
-  const explainer_row = df.values.filter(row => row[column['explainer']] == selected_explainer )
-
-
-  const explainer_cat_scores = (explainer_row.length > 0) ? categories.map(c => explainer_row[0][column['percentage_' + c]]) : categories.map(c => null)
-  const explainer_error = (explainer_row.length > 0) ? '' : `With the applied filters, none of remaining tests could be applied on this explainer,
-  please select another one by clicking on a blue dot in the first figure.`
-  // console.log(df.columns)
-  // console.log(explainer_row)
-  
-  const explainer_scores = [{
-    type: 'bar',
-    x: explainer_cat_scores.slice().reverse(), // todo handel nan values
-    y: categories.slice().reverse(),
-    text: explainer_cat_scores.slice().reverse(),
-    hovertext: categories.slice().reverse().map( x => category_definition[x]),
-    hovertemplate: '<b>Sub-category</b>: %{y}' +
-                        '<br><b>Sub-score</b>: %{x:.2f}<br>' +
-                        '<b>Sub-category definition</b>:%{hovertext}</b><extra></extra>',
-    orientation: 'h',
-  }];
-
-  const explainer_layout = {
-    // height:280,
-    height:320,
-    // title: '<b>Figure 2</b>: Score of <i>'+ selected_explainer +' Explainer</i> per category.',
-    font:{
-      family: 'Raleway, sans-serif'
-    },
-    showlegend: false,
-    xaxis: {
-      tickangle: -45,
-      range: [1, 100],
-
-      title: {
-        text: 'Score [%] ↑'
-      }
-    },
-    yaxis: {
-      // zeroline: false,
-      gridwidth: 2,
-      title: {
-        text: 'Sub scoring categories'
-      }
-    },
-    bargap :0.05
-  };
-
-  const too_much_filters = (kept_xai<=1) ? "None of the indexed xAI satisfy the selected constrains. Please use less filters." : ""
-  const arxiv = 'https://arxiv.org/pdf/2207.14160.pdf' // todo 
   return (
-    // todo add fork me on github
-    <div className="App">
-      <pre className="error">{(error || "").toString()}</pre>
-      <h2 id='Filters' className="content-subhead"  >1. Shortlist xAI that fits your needs:</h2>
-      <pre>Use the filters below to describe the xAI model and the dataset you would like to explain.</pre>
-      {/* <a href="filters.html">Click here to learn more about each constraint.</a> */}
+    <div className="app">
+      <a className="skip-link" href="#Filters" onClick={(event) => { event.preventDefault(); goToSection("Filters"); }}>
+        Skip to the benchmark
+      </a>
 
-      <pre>
-        <CheckboxTree
-            nodes={nodes}
-            checked={checked}
-            expanded={expanded}
-            onCheck={checked => {sql_exec(sql(selected_explainer, checked));setChecked(checked); }}
-            onExpand={expanded => setExpanded(expanded)}
-            showExpandAll={true}
+      <header className="topbar">
+        <button
+          type="button"
+          className="icon-btn"
+          ref={menuButton}
+          aria-label="Open navigation"
+          aria-expanded={navOpen}
+          aria-controls="sidenav"
+          onClick={() => setNavOpen(true)}
+        >
+          <IconMenu />
+        </button>
+        <a className="topbar__brand" href="#header" onClick={(event) => { event.preventDefault(); goToSection("header"); }}>
+          <span className="topbar__dot" />
+          Compare-xAI
+        </a>
+        <ThemeToggle theme={theme} onToggle={toggleTheme} />
+      </header>
+
+      <div className="layout">
+        {navOpen && !isDesktop && (
+          <button type="button" className="nav-backdrop" aria-label="Close navigation" onClick={() => setNavOpen(false)} />
+        )}
+
+        <SideNav
+          open={navOpen}
+          active={activeSection}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onNavigate={goToSection}
+          onClose={() => setNavOpen(false)}
+          isDesktop={isDesktop}
+          lastUpdated={overview.lastUpdated}
         />
-      </pre>
-      <pre>Using the selected filters, we keep <b> {kept_xai} xAI tool(s) out of {total_explainers}</b> and <b>{kept_tests} test(s) out of {total_eligible_points}</b>.   </pre>
-      <pre className="error">{(too_much_filters || "").toString()}</pre>
-      <pre>Below, we test every xAI on these {kept_tests} test(s). Every test evaluates a specific aspect of the xAI algorithm (the <b>fidelity</b> of the explanation to the AI behavior, the <b>stability</b> of the xAI against minor changes in the AI, etc.). <a href={arxiv}>Learn more about implemented tests and how the selection was done.</a></pre>
-      {/* maybe I should let him hold the text to make the plot closer to the filters https://codepen.io/BravoTwo/pen/JjopqaN https://www.w3schools.com/howto/howto_js_collapsible.asp */}
-      <h2 id='Overview_Plot'  className="content-subhead" >2. Evaluate selected xAI using an intuitive scoring method:</h2>
-      <Plot
-        data={data}
-        layout={layout}
-        onClick={plotly_click}
-        onHover={data => document.getElementsByClassName('nsewdrag')[0].style.cursor = 'pointer'}
-        onUnhover={data => document.getElementsByClassName('nsewdrag')[0].style.cursor = ''}
-        divId={'fig'}
-        responsive={true}
-      />
-      
-      <pre className="fig_title"><b>Figure 1:</b>: Global overview of the explainers' performance.<br/><b>Tip</b>: Click on an explainer for more details.</pre>
-      <pre>The bubble plot (<b>Figure 1</b>) summarizes the average performance of the selected xAI(s): time on x-axis v.s. score in percentage on the y-axis.
-A perfect xAI should obtain a score of 100% and finish all {kept_tests} tests in the smallest amount of time. Therefore, it would be located on the top right.<br/>
-Moreover, some xAI might break while running, because of algorithmic/implementation issues. The dot size represents the number of tests completed without failure. Thus, higher portability is described with a bigger dot. <a href={arxiv} target="_blank">Learn more about the overview plot.</a>
-</pre>
-      <pre> An xAI can obtain a good average score but it might completely fail in a specific category of tests. <b>Table 1</b> contains a more detailed scoring method by subdividing the score into {categories.length} categories:<br/>
-      <b>Fidelity</b>:     {category_definition['fidelity']}<br/>
-      <b>Fragility</b>:     {category_definition['fragility']}<br/>
-      <b>Stability</b>:     {category_definition['stability']}<br/>
-      <b>Simplicity</b>:     {category_definition['simplicity']}<br/>
-      <b>Stress tests</b>:     {category_definition['stress']}<br/>
-      <a href={arxiv} target="_blank">See our paper for more details.</a>
-      </pre>
 
-      {/* on hover help https://reactjs.org/docs/events.html */}
+        <main className="main" id="main">
+          <Hero onNavigate={goToSection} />
 
-      <pre>
-          <pre className="fig_title"><b>Table 1:</b> Subscores given the selected filters.</pre>
-          <ResultsTable columns={results[0].columns.map( x => sql_to_nice_name[x])} values={results[0].values} />
-      </pre>
-      <pre>Subscores change with the selected list of tests. Unselect all filters to have a global evaluation of the xAI or select the appropriate ones to obtain an evaluation of the use case of your need.</pre> 
-      <pre></pre> {/* just need some spacing */}
-      <h2 id='Explainer_details'  className="content-subhead" >3. {selected_explainer} Explainer: Details</h2>
-      <pre>Select one specific Explainer by clicking on a blue dot in Figure 1. Below you can find a helpful description of the explainer and its specific requirements.</pre> 
-      <div>
-        {/* <pre id="description"><b>Description:</b> {explainer_description}</pre> */
-        explainer_df.columns.map((explainer_property, i) => (
-            <pre><b>{explainer_property}:</b> {explainer_df.values[0][explainer_column[explainer_property]]}</pre> 
-          ))
-        }
+          {queryError && (
+            <div className="notice notice--error" role="alert">
+              <IconAlert />
+              <span>
+                <strong>The query failed.</strong> {String(queryError.message || queryError)}
+              </span>
+            </div>
+          )}
+
+          {/* ---------------- 1. Filters ---------------- */}
+          <section className="section" id="Filters" aria-labelledby="Filters-title">
+            <div className="section__head">
+              <span className="section__num">1</span>
+              <h2 className="section__title" id="Filters-title">
+                Shortlist xAI that fits your needs
+              </h2>
+            </div>
+            <p className="section__lead">
+              Use the filters below to describe the xAI model and the dataset you would like to explain.
+            </p>
+
+            <div className="card" style={{ marginTop: "1rem" }}>
+              <div className="filters__toolbar">
+                <button type="button" className="btn btn--sm" onClick={() => setExpanded(ALL_PARENTS)}>
+                  Expand all
+                </button>
+                <button type="button" className="btn btn--sm" onClick={() => setExpanded([])}>
+                  Collapse all
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--sm"
+                  onClick={() => setChecked([])}
+                  disabled={checked.length === 0}
+                >
+                  Clear filters
+                </button>
+              </div>
+              <CheckboxTree
+                nodes={NODES}
+                checked={checked}
+                expanded={expanded}
+                onCheck={setChecked}
+                onExpand={setExpanded}
+                icons={TREE_ICONS}
+                showExpandAll={false}
+              />
+            </div>
+
+            <div className="stats">
+              <div className="stat">
+                <div className="stat__value">
+                  {keptExplainers} <small>/ {overview.totalExplainers}</small>
+                </div>
+                <div className="stat__label">xAI tools kept</div>
+              </div>
+              <div className="stat">
+                <div className="stat__value">
+                  {overview.keptTests} <small>/ {overview.totalTests}</small>
+                </div>
+                <div className="stat__label">tests kept</div>
+              </div>
+              <div className="stat">
+                <div className="stat__value">{CATEGORIES.length}</div>
+                <div className="stat__label">scoring categories</div>
+              </div>
+            </div>
+
+            {tooManyFilters && (
+              <div className="notice notice--warn" role="status">
+                <IconAlert />
+                <span>None of the indexed xAI satisfy the selected constrains. Please use less filters.</span>
+              </div>
+            )}
+
+            <p className="prose" style={{ marginTop: "1rem" }}>
+              Below, we test every xAI on these <strong>{overview.keptTests}</strong> test(s). Every test evaluates a
+              specific aspect of the xAI algorithm (the <strong>fidelity</strong> of the explanation to the AI behavior,
+              the <strong>stability</strong> of the xAI against minor changes in the AI, etc.){" "}
+              <a href={ARXIV} target="_blank" rel="noopener noreferrer">
+                Learn more about implemented tests and how the selection was done.
+              </a>
+            </p>
+          </section>
+
+          {/* ---------------- 2. Overview ---------------- */}
+          <section className="section" id="Overview_Plot" aria-labelledby="Overview_Plot-title">
+            <div className="section__head">
+              <span className="section__num">2</span>
+              <h2 className="section__title" id="Overview_Plot-title">
+                Evaluate selected xAI using an intuitive scoring method
+              </h2>
+            </div>
+            <p className="section__lead">
+              The bubble plot summarizes the average performance of the selected xAI(s): time on the x-axis versus score
+              in percentage on the y-axis.
+            </p>
+
+            <figure className="figure">
+              <div className="plot-frame">
+                <OverviewPlot
+                  rows={overview.rows}
+                  theme={theme}
+                  compact={compact}
+                  selected={selectedExplainer}
+                  onSelect={selectExplainer}
+                />
+              </div>
+              <figcaption className="figcaption">
+                <b>Figure 1:</b> Global overview of the explainers&apos; performance.{" "}
+                <span className="plot-hint">
+                  <IconPointer /> Tip: click an explainer for more details.
+                </span>
+              </figcaption>
+            </figure>
+
+            <p className="prose" style={{ marginTop: "1.25rem" }}>
+              A perfect xAI should obtain a score of 100% and finish all {overview.keptTests} tests in the smallest
+              amount of time. Therefore, it would be located on the top left. Moreover, some xAI might break while
+              running, because of algorithmic/implementation issues. The dot size represents the number of tests
+              completed without failure. Thus, higher portability is described with a bigger dot.{" "}
+              <a href={ARXIV} target="_blank" rel="noopener noreferrer">
+                Learn more about the overview plot.
+              </a>
+            </p>
+
+            <p className="prose" style={{ marginTop: "1rem" }}>
+              An xAI can obtain a good average score but it might completely fail in a specific category of tests.{" "}
+              <strong>Table 1</strong> contains a more detailed scoring method by subdividing the score into{" "}
+              {CATEGORIES.length} categories:
+            </p>
+
+            <ul className="catlist">
+              {CATEGORIES.map((category) => (
+                <li className="catlist__item" key={category}>
+                  <span className="dot" style={{ background: "var(--accent)" }} />
+                  <span>
+                    <span className="catlist__name">{category === "stress" ? "Stress tests" : category}</span>{" "}
+                    — {CATEGORY_DEFINITION[category]}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <p className="prose" style={{ marginTop: "1rem" }}>
+              <a href={ARXIV} target="_blank" rel="noopener noreferrer">
+                See our paper for more details.
+              </a>
+            </p>
+
+            <figure className="figure">
+              <figcaption className="figcaption" style={{ marginBottom: ".6rem", marginTop: 0 }}>
+                <b>Table 1:</b> Subscores given the selected filters. Select a row to inspect that explainer.
+              </figcaption>
+              <ResultsTable
+                columns={OVERVIEW_COLUMNS}
+                rows={overview.rows}
+                rowKey="explainer"
+                selected={selectedExplainer}
+                onSelect={selectExplainer}
+                defaultSort={{ key: "average_score", direction: "desc" }}
+                emptyMessage="No xAI algorithm matches the selected filters."
+                caption="Table 1: subscores of every selected explainer"
+              />
+            </figure>
+
+            <p className="prose" style={{ marginTop: "1rem" }}>
+              Subscores change with the selected list of tests. Unselect all filters to have a global evaluation of the
+              xAI or select the appropriate ones to obtain an evaluation of the use case of your need.
+            </p>
+          </section>
+
+          {/* ---------------- 3. Details ---------------- */}
+          <section className="section" id="Explainer_details" aria-labelledby="Explainer_details-title">
+            <div className="section__head">
+              <span className="section__num">3</span>
+              <h2 className="section__title" id="Explainer_details-title">
+                Explainer details
+              </h2>
+            </div>
+            <p className="section__lead">
+              Select one specific explainer by clicking a dot in Figure 1 or a row in Table 1. Below you can find a
+              helpful description of the explainer and its specific requirements.
+            </p>
+
+            <div className="selected-bar">
+              <span className="selected-bar__label">Selected explainer</span>
+              <span className="selected-bar__name">{selectedExplainer}</span>
+              {selectedRow && (
+                <span className="muted nowrap">
+                  average score {formatScore(selectedRow.average_score) || "—"}% ·{" "}
+                  {formatSeconds(selectedRow.time_per_test) || "—"} s per test
+                </span>
+              )}
+            </div>
+
+            <div className="card" style={{ marginTop: "1rem" }}>
+              <ExplainerDetails result={explainerData.details} explainer={selectedExplainer} />
+            </div>
+
+            {!selectedRow && (
+              <div className="notice notice--warn" role="status">
+                <IconAlert />
+                <span>
+                  With the applied filters, none of remaining tests could be applied on this explainer, please select
+                  another one by clicking a dot in Figure 1.
+                </span>
+              </div>
+            )}
+
+            <figure className="figure">
+              <div className="plot-frame">
+                <CategoryPlot scores={categoryScores} theme={theme} compact={compact} />
+              </div>
+              <figcaption className="figcaption">
+                <b>Figure 2:</b> Score of <b>{selectedExplainer}</b> per category.
+              </figcaption>
+            </figure>
+          </section>
+
+          {/* ---------------- 4. Limits ---------------- */}
+          <section className="section" id="Explainer_limits" aria-labelledby="Explainer_limits-title">
+            <div className="section__head">
+              <span className="section__num">4</span>
+              <h2 className="section__title" id="Explainer_limits-title">
+                Limits of the interpretability of its output
+              </h2>
+            </div>
+            <p className="section__lead">
+              <strong>Table 2</strong> gives the most detailed scoring. Here you will learn when exactly{" "}
+              {selectedExplainer} fails in explaining a model. The table is sorted by score (increasing) so you just
+              need to look at the few first tests with a score below 80%. Want to learn how to deal with the limitations
+              of the {selectedExplainer} explainer?{" "}
+              <a href={TEST_CSV} target="_blank" rel="noopener noreferrer">
+                See the workaround solution for each test here!
+              </a>
+            </p>
+
+            <figure className="figure">
+              <figcaption className="figcaption" style={{ marginBottom: ".6rem", marginTop: 0 }}>
+                <b>Table 2:</b> Score obtained by <b>{selectedExplainer}</b> for each test.
+              </figcaption>
+              <ResultsTable
+                columns={TEST_COLUMNS}
+                rows={toRows(explainerData.tests)}
+                rowKey="Test"
+                defaultSort={{ key: "Score [%]", direction: "asc" }}
+                emptyMessage={`No test result available for ${selectedExplainer} with the current filters.`}
+                caption={`Table 2: score of ${selectedExplainer} on every kept test`}
+              />
+            </figure>
+
+            <p className="prose" style={{ marginTop: "1rem" }}>
+              Table 2 is limited to the selected list of tests after filtering. Unselect all filters to have a global
+              evaluation of the xAI or select the appropriate ones to obtain an evaluation of the use case of your need.
+            </p>
+          </section>
+
+          <footer className="footer">
+            <nav aria-label="External resources">
+              {EXTERNAL_LINKS.map((link) => (
+                <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer">
+                  {link.label}
+                </a>
+              ))}
+            </nav>
+            {overview.lastUpdated && <span>Benchmark data last updated {formatDate(overview.lastUpdated)}</span>}
+            <img
+              src="https://4805.short.gy/count-visit"
+              title="Number of page visit since start"
+              alt=""
+              width="80"
+              height="20"
+              loading="lazy"
+              style={{ marginLeft: "auto" }}
+            />
+          </footer>
+        </main>
       </div>
-      
-      <pre className="error">{(explainer_error || "").toString()}</pre>
-      <Plot
-        data={explainer_scores}
-        layout={explainer_layout}
-        responsive={true}
-        divId={'explainer_fig'}
-      />
-      <pre className="fig_title"><b>Figure 2</b>: Score of <b>{selected_explainer} Explainer</b> per category.</pre>
-
-
-      <h2 id='Explainer_limits' className="content-subhead" >4. {selected_explainer} Explainer: Limits of the interpretability of its output</h2>
-      <pre><b>Table 2</b> gives the most detailed scoring. Here you will learn when exactly {selected_explainer} fails in explaining a model. 
-The table is sorted by score (increasing) so you just need to look at the few first tests with a score below 80%. 
-Want to learn how to deal with the limitations of the {selected_explainer} explainer? <a href="https://github.com/Karim-53/Compare-xAI/blob/main/data/01_raw/test.csv" target="_blank">See the workaround solution for each test here!</a>
-</pre>
-      <pre>
-        <pre className="fig_title"><b>Table 2:</b> Score obtained by <b>{selected_explainer} explainer</b> for each test.</pre>
-        { // results contains one object per select statement in the query // results.map(({ columns, values }, i) => (<ResultsTable key={i} columns={columns} values={values} />))
-          <ResultsTable columns={results[2].columns} values={results[2].values}/>
-        }
-      </pre>
-      <pre>Table 2 is limited to the selected list of tests after filtering. Unselect all filters to have a global evaluation of the xAI or select the appropriate ones to obtain an evaluation of the use case of your need.</pre>
     </div>
   );
 }
 
-/**
- * Renders a single value of the array returned by db.exec(...) as a table
- * @param {import("sql.js").QueryExecResult} props
- */
-function ResultsTable({ columns, values }) {
-  return (
-    <table>
-      <thead>
-        <tr>
-          {columns.map((columnName, i) => (
-            <td key={i}>{columnName}</td>
-          ))}
-        </tr>
-      </thead>
+/* ========================================================================== */
+/* Chrome                                                                      */
+/* ========================================================================== */
 
-      <tbody>
-        {
-          // values is an array of arrays representing the results of the query
-          values.map((row, i) => (
-            <tr key={i}>
-              {row.map((value, i) => (
-                <td key={i}>{value}</td>
-              ))}
-            </tr>
-          ))
-        }
-      </tbody>
-    </table>
+function ThemeToggle({ theme, onToggle }) {
+  return (
+    <button
+      type="button"
+      className="icon-btn"
+      onClick={onToggle}
+      aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+      title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+    >
+      {theme === "dark" ? <IconSun /> : <IconMoon />}
+    </button>
   );
 }
+
+function SideNav({ open, active, theme, onToggleTheme, onNavigate, onClose, isDesktop, lastUpdated }) {
+  return (
+    <nav
+      id="sidenav"
+      className={`sidenav${open ? " is-open" : ""}`}
+      aria-label="Sections"
+      aria-hidden={!open && !isDesktop}
+    >
+      <button type="button" className="icon-btn sidenav__close" aria-label="Close navigation" onClick={onClose}>
+        <IconClose />
+      </button>
+
+      <a
+        className="topbar__brand"
+        href="#header"
+        onClick={(event) => {
+          event.preventDefault();
+          onNavigate("header");
+        }}
+        style={{ padding: ".25rem .6rem" }}
+      >
+        <span className="topbar__dot" />
+        Compare-xAI
+      </a>
+
+      <p className="sidenav__title">Benchmark</p>
+      <ul className="sidenav__list">
+        {SECTIONS.map((section) => {
+          const Icon = section.icon;
+          return (
+            <li key={section.id}>
+              <a
+                className="sidenav__link"
+                href={`#${section.id}`}
+                aria-current={active === section.id ? "true" : undefined}
+                onClick={(event) => {
+                  event.preventDefault();
+                  onNavigate(section.id);
+                }}
+              >
+                <span className="sidenav__num">{section.num}</span>
+                <span>{section.label}</span>
+                <Icon style={{ marginLeft: "auto" }} />
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+
+      <p className="sidenav__title">Resources</p>
+      <ul className="sidenav__list">
+        {EXTERNAL_LINKS.map((link) => {
+          const Icon = link.icon;
+          return (
+            <li key={link.href}>
+              <a className="sidenav__link" href={link.href} target="_blank" rel="noopener noreferrer">
+                <Icon />
+                <span>{link.label}</span>
+                <IconExternal style={{ marginLeft: "auto", opacity: 0.5 }} />
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="sidenav__foot">
+        <button type="button" className="btn btn--sm" onClick={onToggleTheme}>
+          {theme === "dark" ? <IconSun /> : <IconMoon />}
+          {theme === "dark" ? "Light theme" : "Dark theme"}
+        </button>
+        {lastUpdated && <p style={{ marginTop: ".75rem" }}>Data updated {formatDate(lastUpdated)}</p>}
+      </div>
+    </nav>
+  );
+}
+
+function Hero({ onNavigate }) {
+  const steps = [
+    { id: "Filters", text: "Shortlist xAI that fits your needs" },
+    { id: "Overview_Plot", text: "Evaluate them using an intuitive scoring method" },
+    { id: "Explainer_details", text: "Select one xAI and learn more about its specific requirements" },
+    { id: "Explainer_limits", text: "Learn the limits of the interpretability of its output" },
+  ];
+
+  return (
+    <section className="hero" id="header" aria-labelledby="hero-title">
+      <span className="hero__eyebrow">A benchmark for feature importance explainable AI</span>
+      <h1 className="hero__title" id="hero-title">
+        Compare-xAI
+      </h1>
+      <p className="hero__subtitle">
+        Are you wondering what is the difference between public explainable AI (xAI) tools? Compare-xAI evaluates them
+        with functional unit tests, right in your browser.
+      </p>
+
+      <div className="hero__actions">
+        <a className="btn btn--primary" href={ARXIV} target="_blank" rel="noopener noreferrer">
+          <IconPaper /> Read the paper
+        </a>
+        <a className="btn" href={`${REPO}#readme`} target="_blank" rel="noopener noreferrer">
+          <IconGithub /> GitHub
+        </a>
+        <a className="btn" href={DATA} target="_blank" rel="noopener noreferrer">
+          <IconDownload /> Download data
+        </a>
+      </div>
+
+      <ol className="steps">
+        {steps.map((step) => (
+          <li key={step.id}>
+            <a
+              href={`#${step.id}`}
+              onClick={(event) => {
+                event.preventDefault();
+                onNavigate(step.id);
+              }}
+            >
+              {step.text}
+            </a>
+          </li>
+        ))}
+      </ol>
+
+      <p className="figcaption" style={{ marginTop: "1.25rem" }}>
+        Don&apos;t forget to{" "}
+        <a href={ARXIV} target="_blank" rel="noopener noreferrer">
+          cite our paper
+        </a>{" "}
+        :)
+      </p>
+    </section>
+  );
+}
+
+/* ========================================================================== */
+/* Plots                                                                       */
+/* ========================================================================== */
+
+function OverviewPlot({ rows, theme, compact, selected, onSelect }) {
+  const colors = PALETTE[theme];
+  const height = compact ? 400 : 560;
+
+  const points = rows.filter(
+    (row) => Number.isFinite(Number(row.time_per_test)) && Number(row.time_per_test) > 0 && row.average_score !== null
+  );
+
+  const times = points.map((row) => Number(row.time_per_test));
+  const scores = points.map((row) => Number(row.average_score));
+  const names = points.map((row) => row.explainer);
+  const completed = points.map((row) => Number(row.eligible_points) || 0);
+
+  const maxCompleted = Math.max(1, ...completed);
+  /* Area - not diameter - carries "number of completed tests". */
+  const sizes = completed.map((value) => 8 + 26 * Math.sqrt(value / maxCompleted));
+
+  const frontier = points.length
+    ? pf.getParetoFrontier(points.map((row, i) => [scores[i], times[i]]), { optimize: "bottomRight" })
+    : [];
+
+  const markerLineColor = names.map((name) => (name === selected ? colors.text1 : colors.surface));
+  const markerLineWidth = names.map((name) => (name === selected ? 2.5 : 1.5));
+
+  /* Fixed axis ranges used to hide any explainer outside [20, 100]% or outside
+     the hard-coded time window; the ranges now follow the data. */
+  const xRange = times.length
+    ? [Math.log10(Math.min(...times)) - 0.5, Math.log10(Math.max(...times)) + 0.5]
+    : [-2.8, 3.5];
+  const yRange = scores.length ? [Math.max(0, Math.min(...scores) - 8), 102] : [20, 100];
+
+  const data = [
+    {
+      x: frontier.map((point) => point[1]),
+      y: frontier.map((point) => point[0]),
+      mode: "lines",
+      type: "scatter",
+      name: "Pareto front",
+      line: { color: colors.series2, width: 2 },
+      hoverinfo: "skip",
+    },
+    {
+      x: times,
+      y: scores,
+      text: names,
+      customdata: completed,
+      mode: compact ? "markers" : "markers+text",
+      type: "scatter",
+      name: "Explainers",
+      textposition: names.map((_, index) => (index % 2 === 0 ? "top center" : "bottom center")),
+      textfont: { color: colors.text3, size: 11 },
+      cliponaxis: false,
+      marker: {
+        size: sizes,
+        color: colors.series1,
+        opacity: 0.9,
+        line: { color: markerLineColor, width: markerLineWidth },
+      },
+      hovertemplate:
+        "<b>%{text}</b><br>Average score: %{y:.1f}%<br>Time per test: %{x:.3g} s<br>Completed tests: %{customdata}<extra></extra>",
+    },
+  ];
+
+  const layout = {
+    ...baseLayout(theme, compact),
+    height,
+    margin: compact ? { l: 48, r: 14, t: 40, b: 48 } : { l: 78, r: 18, t: 44, b: 62 },
+    xaxis: {
+      ...axisStyle(theme),
+      type: "log",
+      range: xRange,
+      dtick: 1, // one label per decade instead of unreadable minor log ticks
+      title: {
+        text: compact
+          ? "Time per test [s] — log scale"
+          : "Fast alg. ←     Average time per test [Seconds] ↓     → Slow alg.",
+        font: { color: colors.text2 },
+      },
+    },
+    yaxis: {
+      ...axisStyle(theme),
+      range: yRange,
+      ticksuffix: "%",
+      title: {
+        text: compact
+          ? "Comprehensibility score"
+          : "Comprehensibility score<br>Poor ←   Average performance per test [%] ↑  → Excellent",
+        font: { color: colors.text2 },
+      },
+    },
+    legend: compact
+      ? { orientation: "h", x: 0, y: 1.14, xanchor: "left", yanchor: "top", font: { color: colors.text2 } }
+      : { x: 1, y: 0, xanchor: "right", yanchor: "bottom", tracegroupgap: 20, font: { color: colors.text2 },
+          bgcolor: "rgba(0,0,0,0)" },
+    annotations: compact
+      ? []
+      : [
+          {
+            x: 0.02,
+            y: 100,
+            xref: "paper",
+            yref: "y",
+            text: "Best xAI(s) are close to this point.",
+            showarrow: true,
+            arrowhead: 7,
+            ax: 40,
+            ay: -30,
+            font: { color: colors.text3 },
+            arrowcolor: colors.text3,
+          },
+        ],
+  };
+
+  const handleClick = useCallback(
+    (event) => {
+      const point = event && event.points && event.points[0];
+      if (point && typeof point.text === "string") onSelect(point.text);
+    },
+    [onSelect]
+  );
+
+  const setCursor = useCallback((event, cursor) => {
+    /* Scope the lookup to this plot: a global getElementsByClassName picked the
+       other figure's drag layer (and threw when it did not exist yet). */
+    const root = event && event.event && event.event.target && event.event.target.closest
+      ? event.event.target.closest(".js-plotly-plot")
+      : null;
+    const drag = root && root.getElementsByClassName("nsewdrag")[0];
+    if (drag) drag.style.cursor = cursor;
+  }, []);
+
+  if (!points.length) {
+    return <div className="table-empty" style={{ height }}>No explainer left to plot. Remove a filter to see results.</div>;
+  }
+
+  return (
+    <Plot
+      data={data}
+      layout={layout}
+      config={{ ...PLOT_CONFIG, displayModeBar: !compact }}
+      onClick={handleClick}
+      onHover={(event) => setCursor(event, "pointer")}
+      onUnhover={(event) => setCursor(event, "")}
+      divId="fig"
+      useResizeHandler
+      style={{ width: "100%", height: `${height}px` }}
+    />
+  );
+}
+
+function CategoryPlot({ scores, theme, compact }) {
+  const colors = PALETTE[theme];
+  const height = compact ? 280 : 340;
+  const labels = CATEGORIES.slice().reverse();
+  const values = scores.slice().reverse();
+
+  const data = [
+    {
+      type: "bar",
+      orientation: "h",
+      x: values,
+      y: labels,
+      text: values.map((value) => (isMissing(value) ? "" : `${Number(value).toFixed(1)}%`)),
+      textposition: "auto",
+      insidetextfont: { color: "#fff" },
+      outsidetextfont: { color: colors.text2 },
+      cliponaxis: false,
+      hovertext: labels.map((label) => CATEGORY_DEFINITION[label]),
+      hovertemplate:
+        "<b>Sub-category</b>: %{y}<br><b>Sub-score</b>: %{x:.1f}%<br><b>Definition</b>: %{hovertext}<extra></extra>",
+      marker: { color: colors.series1, line: { color: colors.surface, width: 2 } },
+    },
+  ];
+
+  const layout = {
+    ...baseLayout(theme, compact),
+    height,
+    showlegend: false,
+    bargap: 0.28,
+    margin: compact ? { l: 78, r: 34, t: 16, b: 44 } : { l: 104, r: 46, t: 16, b: 52 },
+    xaxis: {
+      ...axisStyle(theme),
+      range: [0, 100],
+      ticksuffix: "%",
+      title: { text: "Score [%] ↑", font: { color: colors.text2 } },
+    },
+    yaxis: { ...axisStyle(theme), automargin: true, title: { text: "" } },
+  };
+
+  return (
+    <Plot
+      data={data}
+      layout={layout}
+      config={{ ...PLOT_CONFIG, displayModeBar: !compact }}
+      divId="explainer_fig"
+      useResizeHandler
+      style={{ width: "100%", height: `${height}px` }}
+    />
+  );
+}
+
+/* ========================================================================== */
+/* Tables                                                                      */
+/* ========================================================================== */
+
+function compareValues(a, b, direction) {
+  const missingA = isMissing(a);
+  const missingB = isMissing(b);
+  if (missingA && missingB) return 0;
+  if (missingA) return 1; // empty cells always sink
+  if (missingB) return -1;
+  const numberA = Number(a);
+  const numberB = Number(b);
+  const numeric = Number.isFinite(numberA) && Number.isFinite(numberB) && typeof a !== "string";
+  const result = numeric ? numberA - numberB : String(a).localeCompare(String(b), "en", { sensitivity: "base" });
+  return direction === "asc" ? result : -result;
+}
+
+function ResultsTable({ columns, rows, rowKey, selected, onSelect, defaultSort, emptyMessage, caption }) {
+  const [sort, setSort] = useState(defaultSort || null);
+  const [showSecondary, setShowSecondary] = useState(false);
+  /* Below 700px every cell becomes its own line, so the five sub-score columns
+     would turn each explainer into a nine-line block. */
+  const narrow = useMediaQuery("(max-width: 700px)");
+  const hasSecondary = columns.some((column) => column.secondary);
+  const visibleColumns = narrow && !showSecondary ? columns.filter((column) => !column.secondary) : columns;
+
+  const sorted = useMemo(() => {
+    if (!sort) return rows;
+    const copy = rows.slice();
+    copy.sort((a, b) => compareValues(a[sort.key], b[sort.key], sort.direction));
+    return copy;
+  }, [rows, sort]);
+
+  const onHeaderClick = (key, type) =>
+    setSort((current) =>
+      current && current.key === key
+        ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: type === "score" || type === "number" ? "desc" : "asc" }
+    );
+
+  if (!rows.length) {
+    return (
+      <div className="table-card">
+        <p className="table-empty">{emptyMessage}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="table-card">
+      {narrow && hasSecondary && (
+        <div className="table-toolbar">
+          <button type="button" className="btn btn--sm" onClick={() => setShowSecondary((value) => !value)}>
+            {showSecondary ? "Hide sub-scores" : "Show sub-scores"}
+          </button>
+          <span>{rows.length} rows</span>
+        </div>
+      )}
+      <div className="table-scroll">
+        <table className="rtable">
+          {caption && <caption className="visually-hidden">{caption}</caption>}
+          <thead>
+            <tr>
+              {visibleColumns.map((column) => {
+                const isSorted = sort && sort.key === column.key;
+                return (
+                  <th
+                    key={column.key}
+                    scope="col"
+                    className="is-sortable"
+                    aria-sort={isSorted ? (sort.direction === "asc" ? "ascending" : "descending") : undefined}
+                    onClick={() => onHeaderClick(column.key, column.type)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onHeaderClick(column.key, column.type);
+                      }
+                    }}
+                    tabIndex={0}
+                    role="columnheader"
+                  >
+                    {column.label}
+                    <span className="sort-arrow" aria-hidden="true">
+                      {isSorted ? (sort.direction === "asc" ? "▲" : "▼") : "↕"}
+                    </span>
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((row, index) => {
+              const key = rowKey ? row[rowKey] : index;
+              const isSelected = selected !== undefined && row[rowKey] === selected;
+              return (
+                <tr
+                  key={`${key}-${index}`}
+                  className={`${onSelect ? "is-clickable" : ""}${isSelected ? " is-selected" : ""}`}
+                  onClick={onSelect ? () => onSelect(row[rowKey]) : undefined}
+                  tabIndex={onSelect ? 0 : undefined}
+                  onKeyDown={
+                    onSelect
+                      ? (event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            onSelect(row[rowKey]);
+                          }
+                        }
+                      : undefined
+                  }
+                >
+                  {visibleColumns.map((column) => (
+                    <Cell key={column.key} column={column} value={row[column.key]} />
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function Cell({ column, value }) {
+  if (column.type === "score") {
+    const score = formatScore(value);
+    return (
+      <td className="is-num" data-label={column.label}>
+        {score === null ? (
+          <span className="muted">—</span>
+        ) : (
+          <span className="scorecell">
+            <span className="scorecell__num">{score}</span>
+            <span className="scorecell__bar">
+              <span
+                className="scorecell__fill"
+                style={{ width: `${Math.max(0, Math.min(100, Number(score)))}%` }}
+              />
+            </span>
+          </span>
+        )}
+      </td>
+    );
+  }
+
+  if (column.type === "seconds") {
+    const seconds = formatSeconds(value);
+    return (
+      <td className="is-num" data-label={column.label}>
+        {seconds === null ? <span className="muted">—</span> : seconds}
+      </td>
+    );
+  }
+
+  if (column.type === "number") {
+    return (
+      <td className="is-num" data-label={column.label}>
+        {isMissing(value) ? <span className="muted">—</span> : Number(value).toLocaleString("en-US")}
+      </td>
+    );
+  }
+
+  return (
+    <td className={column.primary ? "is-primary" : ""} data-label={column.label}>
+      {isMissing(value) ? <span className="muted">—</span> : String(value)}
+    </td>
+  );
+}
+
+/* ========================================================================== */
+/* Explainer details                                                           */
+/* ========================================================================== */
+
+function ExplainerDetails({ result, explainer }) {
+  const rows = toRows(result);
+  const row = rows[0];
+
+  if (!row) {
+    return (
+      <p className="muted">
+        No description available for <strong>{explainer}</strong> in the database yet.
+      </p>
+    );
+  }
+
+  return (
+    <dl className="deflist">
+      {result.columns.map((column) => (
+        <React.Fragment key={column}>
+          <dt>{column}</dt>
+          <dd>
+            {column === "Original paper" ? (
+              <Citation raw={row[column]} />
+            ) : column === "Source code" ? (
+              <SourceCode value={row[column]} />
+            ) : (
+              renderText(row[column], column)
+            )}
+          </dd>
+        </React.Fragment>
+      ))}
+    </dl>
+  );
+}
+
+function SourceCode({ value }) {
+  if (isMissing(value)) return <span className="muted">Not documented yet.</span>;
+  const url = String(value).trim();
+  if (!/^https?:\/\//.test(url)) return <span>{url}</span>;
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer">
+      {url.replace(/^https?:\/\//, "").replace(/\/$/, "")} <IconExternal style={{ width: 13, height: 13 }} />
+    </a>
+  );
+}
+
+function Citation({ raw }) {
+  const [showRaw, setShowRaw] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const citation = parseBibtex(raw);
+
+  useEffect(() => {
+    if (!copied) return undefined;
+    const timer = window.setTimeout(() => setCopied(false), 2000);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
+
+  if (!citation) return renderText(raw, "paper");
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(citation.raw);
+      setCopied(true);
+    } catch (error) {
+      setShowRaw(true); // clipboard blocked: at least reveal the entry
+    }
+  };
+
+  return (
+    <div className="stack-sm">
+      <div>
+        {citation.title && <span className="bib-title">{citation.title}</span>}
+        <div className="bib-meta">
+          {[formatAuthors(citation.authors), citation.venue, citation.year].filter(Boolean).join(" · ")}
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: ".4rem", flexWrap: "wrap" }}>
+        <button type="button" className="btn btn--sm" onClick={() => setShowRaw((value) => !value)}>
+          {showRaw ? "Hide BibTeX" : "Show BibTeX"}
+        </button>
+        <button type="button" className="btn btn--sm" onClick={copy}>
+          {copied ? <IconCheck /> : <IconCopy />}
+          {copied ? "Copied" : "Copy BibTeX"}
+        </button>
+        {citation.url && (
+          <a className="btn btn--sm" href={citation.url} target="_blank" rel="noopener noreferrer">
+            <IconExternal /> Open
+          </a>
+        )}
+      </div>
+      {showRaw && <pre className="bibtex">{citation.raw}</pre>}
+    </div>
+  );
+}
+

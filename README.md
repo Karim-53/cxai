@@ -17,15 +17,32 @@ This is a single-page [React](https://reactjs.org/) application that ships the e
 ## 🛠️ Tech highlights
 - ⚛️ **React SPA** — served statically via GitHub Pages.
 - 🗄️ **In-browser SQL** — the benchmark ships as a SQLite DB read directly in the browser with sql.js (WASM).
-- 🧩 **Custom webpack via [craco](https://github.com/gsoft-inc/craco)** — see [`craco.config.js`](./craco.config.js), which copies the sql.js WASM module into the build assets. The application logic lives in [`src/App.js`](./src/App.js).
+- 🧩 **Custom webpack via [craco](https://github.com/gsoft-inc/craco)** — see [`craco.config.js`](./craco.config.js), which copies the sql.js WASM module into the build assets.
+- 🎨 **Zero third-party front-end assets** — layout, icons, fonts and the light/dark theme are all self-hosted, so nothing breaks when an external CDN moves.
+
+## 📁 Source layout
+| File | Role |
+|---|---|
+| [`src/App.js`](./src/App.js) | page, sections, plots and tables |
+| [`src/queries.js`](./src/queries.js) | filter tree + one SQL builder per statement |
+| [`src/format.js`](./src/format.js) | number / text / BibTeX formatting |
+| [`src/theme.js`](./src/theme.js) | light–dark tokens shared by CSS and Plotly |
+| [`src/icons.js`](./src/icons.js) | inline SVG icon set |
+| [`src/styles.css`](./src/styles.css) | design tokens and responsive layout |
 
 ## 🚀 Run it locally
-Requires Node.js 16.
+Built with react-scripts 4 (webpack 4), so use Node.js 16 (see [`.nvmrc`](./.nvmrc)).
 
 ```bash
 npm install
 npm start        # dev server at http://localhost:3000
-npm run build    # production build
+npm run build    # production build, written to ./docs (GitHub Pages source)
+```
+
+On Node 17 and newer, webpack 4 needs the legacy OpenSSL provider:
+
+```bash
+NODE_OPTIONS=--openssl-legacy-provider npm run build
 ```
 
 ## 🔗 Related
