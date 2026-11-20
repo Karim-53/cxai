@@ -274,6 +274,14 @@ a:hover { color: var(--accent-strong); }
 .hero__title { font-size: var(--step-4); margin: .9rem 0 .4rem; letter-spacing: -.035em; }
 .hero__subtitle { font-size: var(--step-1); color: var(--text-2); max-width: 46ch; font-weight: 450; }
 .hero__actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.4rem; }
+.hero__video { margin: 1.6rem 0 0; max-width: 720px; }
+.hero__video-frame {
+  position: relative; aspect-ratio: 16 / 9; overflow: hidden;
+  border: 1px solid var(--border); border-radius: var(--radius-lg);
+  background: #000; box-shadow: var(--shadow-sm);
+}
+.hero__video-frame iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+.hero__video .figcaption { margin-top: .5rem; }
 
 .btn {
   display: inline-flex; align-items: center; gap: .45rem;
@@ -560,7 +568,7 @@ table.rtable { width: 100%; border-collapse: separate; border-spacing: 0; font-s
 }
 
 @media print {
-  .topbar, .sidenav, .nav-backdrop, .plot-hint, .hero__actions { display: none !important; }
+  .topbar, .sidenav, .nav-backdrop, .plot-hint, .hero__actions, .hero__video { display: none !important; }
   body { background: #fff; }
   .card, .table-card, .plot-frame { box-shadow: none; }
   .table-scroll { max-height: none; overflow: visible; }

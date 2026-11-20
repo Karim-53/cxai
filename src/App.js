@@ -60,6 +60,7 @@ import {
 const ARXIV = "https://arxiv.org/pdf/2207.14160.pdf";
 const REPO = "https://github.com/Karim-53/Compare-xAI";
 const DATA = "https://github.com/Karim-53/Compare-xAI/tree/main/data";
+const TALK_VIDEO_ID = "0kTCpItXQDs";
 const TEST_CSV = "https://github.com/Karim-53/Compare-xAI/blob/main/data/01_raw/test.csv";
 
 const SECTIONS = [
@@ -768,6 +769,26 @@ function Hero({ onNavigate }) {
           <IconDownload /> Download data
         </a>
       </div>
+
+      <figure className="hero__video">
+        <div className="hero__video-frame">
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/${TALK_VIDEO_ID}?rel=0`}
+            title="Compare-xAI: talk at the XAI 2023 Conference"
+            loading="lazy"
+            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
+          />
+        </div>
+        <figcaption className="figcaption">
+          The talk: Compare-xAI presented at the XAI 2023 Conference (
+          <a href={`https://www.youtube.com/watch?v=${TALK_VIDEO_ID}`} target="_blank" rel="noopener noreferrer">
+            open on YouTube
+          </a>
+          ).
+        </figcaption>
+      </figure>
 
       <ol className="steps">
         {steps.map((step) => (
